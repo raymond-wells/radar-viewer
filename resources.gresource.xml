@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/org/rwells/RadarViewer">
+    <file compressed="true" alias="main.css">assets/main.css</file>
+    </gresource>
+  <gresource prefix="/org/gtk/example/icons/scalable/actions/">
+<file compressed="true" alias="radar-site.svg">assets/radar-site.svg</file>
+  </gresource>
+</gresources>

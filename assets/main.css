@@ -1,0 +1,7 @@
+image.radar-site {
+    transform: scale(1.5);
+}
+
+image.radar-site:hover {
+    transform: scale(2.0);
+}
