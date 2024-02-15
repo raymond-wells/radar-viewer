@@ -38,7 +38,6 @@ radial_starts: []f64 = undefined,
 radial_deltas: []f64 = undefined,
 num_radials: u32 = undefined,
 num_data_points: usize = 0,
-radial_affinity: []u32 = undefined,
 index_of_first_range_bin: i16 = undefined,
 product_code: i16 = 94,
 range_scale_factor: f32 = 0.0,
@@ -143,7 +142,6 @@ fn decodeDigitalRadialProduct(self: *Self, reader: anytype) !void {
     self.radial_data = try allocator.alloc(u8, self.num_range_bins * self.num_radials);
     self.radial_starts = try allocator.alloc(f64, self.num_radials);
     self.radial_deltas = try allocator.alloc(f64, self.num_radials);
-    self.radial_affinity = try allocator.alloc(u32, self.num_range_bins * self.num_radials);
 
     var expected_byte_count: u16 = 0;
     var read_head: usize = 0;
@@ -169,7 +167,6 @@ fn decodeDigitalRadialProduct(self: *Self, reader: anytype) !void {
             read_head += @intCast(self.num_range_bins - expected_byte_count);
         }
 
-        @memset(self.radial_affinity[read_head .. read_head + self.num_range_bins], @intCast(radial));
         read_head += bytes_read;
     }
 

@@ -62,7 +62,7 @@ color_steps: []Step,
 /// of the file. This is required in order to correctly perform interpolation.
 ///
 pub fn parseColorTable(allocator: std.mem.Allocator, reader: anytype) !Self {
-    var return_val: Self = .{
+    var self: Self = .{
         .allocator = allocator,
         .product = try TinyString.init(0),
         .units = try TinyString.init(0),
@@ -94,27 +94,21 @@ pub fn parseColorTable(allocator: std.mem.Allocator, reader: anytype) !Self {
         }
 
         switch (statement_type.?) {
-            .Product => {
-                try return_val.product.resize(0);
-                return_val.product.appendSliceAssumeCapacity(statement[0..@min(15, statement.len)]);
-            },
-            .Units => {
-                try return_val.units.resize(0);
-                return_val.units.appendSliceAssumeCapacity(statement[0..@min(15, statement.len)]);
-            },
-            .Scale => return_val.scale = try std.fmt.parseFloat(@TypeOf(return_val.scale), statement),
-            .Offset => return_val.offset = try std.fmt.parseFloat(@TypeOf(return_val.offset), statement),
-            .Step => return_val.step = try std.fmt.parseFloat(@TypeOf(return_val.step), statement),
+            .Product => self.product = try TinyString.fromSlice(statement[0..@min(15, statement.len)]),
+            .Units => self.units = try TinyString.fromSlice(statement[0..@min(15, statement.len)]),
+            .Scale => self.scale = try std.fmt.parseFloat(@TypeOf(self.scale), statement),
+            .Offset => self.offset = try std.fmt.parseFloat(@TypeOf(self.offset), statement),
+            .Step => self.step = try std.fmt.parseFloat(@TypeOf(self.step), statement),
             .Color, .SolidColor => try color_steps.append(try parseAnyColorStep(statement, parseRgb)),
             .Color4, .SolidColor4 => try color_steps.append(try parseAnyColorStep(statement, parseRgba)),
-            .RF => return_val.range_folded = try parseRgb(@constCast(&std.mem.splitAny(u8, statement, " "))),
+            .RF => self.range_folded = try parseRgb(@constCast(&std.mem.splitAny(u8, statement, " "))),
         }
     }
 
-    return_val.color_steps = try color_steps.toOwnedSlice();
-    std.sort.heap(Step, return_val.color_steps, {}, Step.lessThan);
+    self.color_steps = try color_steps.toOwnedSlice();
+    std.sort.heap(Step, self.color_steps, {}, Step.lessThan);
 
-    return return_val;
+    return self;
 }
 
 pub fn deinit(self: Self) void {
@@ -268,8 +262,8 @@ test "Parse Color Table: No steps" {
     const parsed_table = try parseColorTable(std.testing.allocator, fbs.reader());
     defer parsed_table.deinit();
 
-    try std.testing.expectEqualStrings("BR", parsed_table.product.slice());
-    try std.testing.expectEqualStrings("dbZ", parsed_table.units.slice());
+    try std.testing.expectEqualStrings("BR", parsed_table.product.constSlice());
+    try std.testing.expectEqualStrings("dbZ", parsed_table.units.constSlice());
 }
 
 test "Parse Color Table: Color Steps" {
@@ -286,8 +280,8 @@ test "Parse Color Table: Color Steps" {
     const parsed_table = try parseColorTable(std.testing.allocator, fbs.reader());
     defer parsed_table.deinit();
 
-    try std.testing.expectEqualStrings("BR", parsed_table.product.slice());
-    try std.testing.expectEqualStrings("dbZ", parsed_table.units.slice());
+    try std.testing.expectEqualStrings("BR", parsed_table.product.constSlice());
+    try std.testing.expectEqualStrings("dbZ", parsed_table.units.constSlice());
     try std.testing.expectEqual(2, parsed_table.color_steps.len);
 
     try std.testing.expectEqual(10.0, parsed_table.color_steps[0].value);
