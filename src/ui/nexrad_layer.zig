@@ -242,10 +242,7 @@ pub const NexradLayer = struct {
         c.gtk_widget_queue_draw(@ptrCast(self));
     }
 
-    ///
     /// Takes the currently loaded radar image and draws the radial data to the internal radar surface.
-    ///
-    ///
     fn redrawRadarTexture(self: *Self, radar_data: *nexrad.NexradLevel3) !void {
         const surface_size: f64 = @floatFromInt(self.internal_surface_size);
         const surface_diameter: f64 = @as(f64, @floatFromInt(radar_data.num_range_bins)) * 2.0;
@@ -273,12 +270,14 @@ pub const NexradLayer = struct {
         c.cairo_scale(context, scale_fac, scale_fac);
 
         var range_bin: u64 = 0;
+        var radial: u64 = 0;
         for (
             radar_data.radial_data[0..radar_data.num_data_points],
-            radar_data.radial_affinity[0..radar_data.num_data_points],
             0..,
-        ) |data, radial, i| {
+        ) |data, i| {
             range_bin = i % @as(u64, @intCast(radar_data.num_range_bins));
+            radial += @intFromBool(i > 0 and range_bin == 0);
+
             if (data == 0) {
                 continue;
             }

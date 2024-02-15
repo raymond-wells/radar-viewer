@@ -179,7 +179,7 @@ fn importColorTableFromReader(self: *Self, reader: anytype) !*lib.AutoBoxed(Entr
     });
 
     entry.value.product = defs.ProductCodeToAssociation.get(
-        entry.value.table.product.slice(),
+        entry.value.table.product.constSlice(),
     ) orelse .BaseReflectivity;
 
     entry.value.table.populateLookupTable(
