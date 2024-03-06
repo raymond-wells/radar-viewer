@@ -47,7 +47,6 @@ pub const NexradLayer = struct {
     const Point = @Vector(2, f64);
     const GPoint = @Vector(2, f32);
     const BoxedRadarData = lib.AutoBoxed(nexrad.NexradLevel3);
-    /// Each radial within a radar image spans 230km (the diameter of a radial image being 460km).
     const Self = @This();
 
     pub usingnamespace gobject.RegisterType(Self, &c.shumate_layer_get_type, "NexradLayer", &.{});
@@ -203,6 +202,7 @@ pub const NexradLayer = struct {
             94 => 230000.0,
             99, 161 => 150012.1,
             180, 182 => 44448.02,
+            135 => 172236.1,
             else => 0.0,
         };
         const task = gio.asyncTaskWrapper(
@@ -254,11 +254,22 @@ pub const NexradLayer = struct {
             94, 180 => .BaseReflectivity,
             99, 182 => .BaseVelocity,
             161 => .CorrelationCoefficient,
+            135 => .EnhancedEchoTops,
             else => .BaseReflectivity,
         };
 
         const color_table = self.color_table_manager.getEntryForProduct(product) orelse return error.NoColorTableForProduct;
         defer color_table.unref();
+
+        var dynamic_lut: [256]@Vector(4, f64) = undefined;
+        var lut: []@Vector(4, f64) = undefined;
+
+        if (radar_data.decoding_parameters) |parameters| {
+            color_table.value.table.populateDynamicLookupTable(f64, &dynamic_lut, parameters);
+            lut = &dynamic_lut;
+        } else {
+            lut = &color_table.value.lut;
+        }
 
         c.cairo_set_source_rgba(context, 0.0, 0.0, 0.0, 0.0);
         c.cairo_set_operator(context, c.CAIRO_OPERATOR_SOURCE);
@@ -300,7 +311,7 @@ pub const NexradLayer = struct {
             );
             c.cairo_close_path(context);
 
-            const color = color_table.value.lut[@as(usize, @intCast(data))];
+            const color = lut[@as(usize, @intCast(data))];
             c.cairo_set_source_rgba(
                 context,
                 color[0],

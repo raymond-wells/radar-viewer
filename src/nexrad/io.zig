@@ -19,30 +19,6 @@ const std = @import("std");
 const defs = @import("definitions.zig");
 const nws_pub_radar_url_prefix = "https://tgftp.nws.noaa.gov";
 
-const known_prefixes_by_radar_site = std.ComptimeStringMap(u8, &.{
-    .{ "JUA", 't' },
-    .{ "HKI", 'p' },
-    .{ "HMO", 'p' },
-    .{ "HKM", 'p' },
-    .{ "HWA", 'p' },
-    .{ "APD", 'p' },
-    .{ "ACG", 'p' },
-    .{ "AIH", 'p' },
-    .{ "AHG", 'p' },
-    .{ "AKC", 'p' },
-    .{ "ABC", 'p' },
-    .{ "AEC", 'p' },
-    .{ "GUA", 'p' },
-});
-
-pub fn getRidPrefix(radar_site: []const u8) u8 {
-    if (known_prefixes_by_radar_site.get(radar_site)) |known| {
-        return known;
-    }
-
-    return 'k';
-}
-
 /// Attempts to fetch the NexRad Level 3 data URL for the latest scan of the provided radar product. The "product code" here is
 /// the string product code.
 pub fn getRadarFileUrl(buffer: []u8, radar_site: []const u8, product_code: []const u8) ![]u8 {

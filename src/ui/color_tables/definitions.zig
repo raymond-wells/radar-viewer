@@ -19,6 +19,7 @@ pub const ProductAssociation = enum {
     BaseReflectivity,
     BaseVelocity,
     CorrelationCoefficient,
+    EnhancedEchoTops,
 };
 
 pub const ProductCodeToAssociation = std.ComptimeStringMap(
@@ -27,13 +28,18 @@ pub const ProductCodeToAssociation = std.ComptimeStringMap(
         .{ "BR", .BaseReflectivity },
         .{ "BV", .BaseVelocity },
         .{ "CC", .CorrelationCoefficient },
+        .{ "EET", .EnhancedEchoTops },
     },
 );
 
+/// Static ranges, deprecated as static ranges are the "old way" of decoding values.
+/// The new data level decoding scheme will use dynamic LUTs to support more accurate\
+/// conversion of data, at the cost of a little performance.
 pub const Ranges: [@typeInfo(ProductAssociation).Enum.fields.len]struct { f32, f32 } = .{
     .{ -32.0, 95.0 },
     .{ -247.0, 245.0 },
     .{ 0.2, 1.05 },
+    .{ 0.0, 75.0 },
 };
 
 pub const number_of_products = std.enums.values(ProductAssociation).len;

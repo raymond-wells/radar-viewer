@@ -94,6 +94,7 @@ const product_code_to_product_string = std.ComptimeStringMap([]const u8, .{
 });
 
 pub fn getDSCodeForProductCode(product_code: []const u8) ![]const u8 {
+    std.log.debug("PC: {s}", .{product_code});
     if (product_code_to_product_string.get(product_code)) |ds_code| {
         return ds_code;
     }

@@ -20,6 +20,7 @@ pub const color_tables = struct {
     pub const nexrad_l3_p94 = @embedFile("nexrad_l3_p94.wctpal");
     pub const nexrad_l3_p99 = @embedFile("nexrad_l3_p99.wctpal");
     pub const nexrad_l3_p161 = @embedFile("nexrad_l3_p161.wctpal");
+    pub const nexrad_l3_p135 = @embedFile("nexrad_l3_p135.wctpal");
 };
 
 pub const license = @embedFile("license_statement.txt");
