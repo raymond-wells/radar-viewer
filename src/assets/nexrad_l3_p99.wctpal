@@ -2,7 +2,7 @@
 # L3PC_LONG_RANGE_BASE_VELOCITY_8BIT
 
 Product: BV
-Units: KT
+Units: m/s
 Color: +70   255 0 0
 Color: +60   255 0 0
 Color: +50   210 0 0 

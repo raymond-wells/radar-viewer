@@ -312,7 +312,11 @@ pub const Application = struct {
         const tilt_value = @as(u8, @intFromFloat(c.gtk_spin_button_get_value(tilt)));
         const product_index: usize = @intCast(c.gtk_drop_down_get_selected(self.product_selector));
         const tilt_index = self.product_table[product_index].tilt_digit_index;
-        self.provider.radar_product.str[tilt_index] = '0' + (tilt_value - 1);
+
+        if (self.product_table[product_index].tilt_levels > 1) {
+            self.provider.radar_product.str[tilt_index] = '0' + (tilt_value - 1);
+        }
+
         _ = self.provider.checkForRadarUpdates();
     }
 

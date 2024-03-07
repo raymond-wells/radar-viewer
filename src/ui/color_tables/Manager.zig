@@ -182,11 +182,17 @@ fn importColorTableFromReader(self: *Self, reader: anytype) !*lib.AutoBoxed(Entr
         entry.value.table.product.constSlice(),
     ) orelse .BaseReflectivity;
 
+    const data_units: usize = switch (entry.value.product) {
+        .EnhancedEchoTops => 70,
+        else => 254,
+    };
+
     entry.value.table.populateLookupTable(
         f64,
         &entry.value.lut,
         defs.Ranges[@intFromEnum(entry.value.product)][0],
         defs.Ranges[@intFromEnum(entry.value.product)][1],
+        data_units,
     );
 
     return entry;

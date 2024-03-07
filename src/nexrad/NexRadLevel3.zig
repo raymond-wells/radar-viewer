@@ -24,6 +24,8 @@ const std = @import("std");
 const utilities = @import("utilities.zig");
 const defs = @import("definitions.zig");
 const bzip2 = @import("bzip2.zig");
+const models = @import("models.zig");
+
 const Self = @This();
 
 /// Radar products support up to 460km at 1/4km resolution.
@@ -53,6 +55,12 @@ radar_latitude: f32 = 0.0,
 radar_longitude: f32 = 0.0,
 sweep_i: i16 = 0,
 sweep_j: i16 = 0,
+
+/// Holds product specific properties with relation to data
+/// level interpretation. Primarily for future support of
+/// dynamic lookup tables to more accurately render data levels
+/// across product changes & upcoming value tooltip feature.
+decoding_parameters: ?models.DecodingParameters = null,
 
 pub fn init(allocator: std.mem.Allocator) Self {
     return .{
@@ -99,10 +107,65 @@ pub fn decodeHeader(self: *Self, reader: anytype) !void {
     self.volume_scan_number = try reader.readInt(i16, .big);
     self.volume_scan_date = try reader.readInt(i16, .big);
     self.volume_scan_time = try reader.readInt(i32, .big);
+    try reader.skipBytes(14, .{});
 
+    try self.readProductSpecificProperties(reader);
     // Compressed data beginns at offset 150.
-    try reader.skipBytes(74, .{});
     self.header_loaded = true;
+}
+
+/// Attempts to read the "product specific properties", which specify the decoding
+/// parameters for select ranges of product type defined in ICD-2620001AB. These properties are
+/// required to accurately convert the byte encoded data values to real-world units.
+fn readProductSpecificProperties(self: *Self, reader: anytype) !void {
+    switch (self.product_code) {
+        393, 99, 154, 155, 2, 94, 153, 193, 195 => {
+            self.decoding_parameters = .{
+                .MinWithIncrement = .{
+                    .min_value = @as(f32, @floatFromInt(try reader.readInt(i16, .big))) / 10.0,
+                    .increment = @as(f32, @floatFromInt(try reader.readInt(i16, .big))) / 10.0,
+                    .num_levels = @intCast(try reader.readInt(u16, .big)),
+                },
+            };
+            try reader.skipBytes(54, .{});
+        },
+        81 => {
+            self.decoding_parameters = .{
+                .MinWithIncrement = .{
+                    .min_value = @as(f32, @floatFromInt(try reader.readInt(i16, .big))) / 10.0,
+                    .increment = @as(f32, @floatFromInt(try reader.readInt(i16, .big))) / 1000.0,
+                    .num_levels = @intCast(try reader.readInt(u16, .big)),
+                },
+            };
+            try reader.skipBytes(54, .{});
+        },
+        159, 161, 163, 167, 168, 170, 172, 173, 174, 175, 176 => {
+            self.decoding_parameters = .{
+                .ScaledWithOffset = .{
+                    .scale = @as(f32, @bitCast(try reader.readInt(u32, .big))),
+                    .offset = @as(f32, @bitCast(try reader.readInt(u32, .big))),
+                    .max_data_level = @intCast(try reader.readInt(u32, .big) & 0xFFFF),
+                    .leading_flags = @intCast(try reader.readInt(u16, .big)),
+                },
+            };
+            try reader.skipBytes(46, .{});
+        },
+        135 => {
+            self.decoding_parameters = .{
+                .EchoTops = .{
+                    .data_mask = @intCast(try reader.readInt(u16, .big) & 0xFF),
+                    .data_scale = @floatFromInt(try reader.readInt(u16, .big)),
+                    .data_offset = @floatFromInt(try reader.readInt(u16, .big)),
+                    .topped_mask = @intCast(try reader.readInt(u16, .big) & 0xFF),
+                },
+            };
+            try reader.skipBytes(52, .{});
+        },
+        else => {
+            self.decoding_parameters = null;
+            try reader.skipBytes(60, .{});
+        },
+    }
 }
 
 /// Attmepts to decode Digital Radial Data Packet code 16, containing 8 bit radial
@@ -138,6 +201,7 @@ fn decodeDigitalRadialProduct(self: *Self, reader: anytype) !void {
     self.range_scale_factor = @as(f32, @floatFromInt(try bzip2Reader.readInt(u16, .big))) / 1000.0;
 
     const allocator = self.arena.?.allocator();
+    errdefer _ = self.arena.?.reset(.free_all);
     self.num_radials = try bzip2Reader.readInt(u16, .big);
     self.radial_data = try allocator.alloc(u8, self.num_range_bins * self.num_radials);
     self.radial_starts = try allocator.alloc(f64, self.num_radials);

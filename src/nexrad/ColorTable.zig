@@ -18,6 +18,7 @@
 //! radar products into colors for display on a radar map. Typically these values
 //! comprise either a smooth gradient between measured units or a series of bands of solid colors.
 const std = @import("std");
+const models = @import("models.zig");
 const RGBA = @Vector(4, u8);
 const Self = @This();
 
@@ -54,6 +55,7 @@ offset: f32 = undefined,
 step: f32 = undefined,
 range_folded: ?RGBA,
 color_steps: []Step,
+unit_conversion_factor: f32 = 1.0,
 
 /// Parses the data provided by the given `GenericReader` into a new instance. Uses an allocator to allocate
 /// space for the color steps, which can be of variable number.
@@ -108,6 +110,13 @@ pub fn parseColorTable(allocator: std.mem.Allocator, reader: anytype) !Self {
     self.color_steps = try color_steps.toOwnedSlice();
     std.sort.heap(Step, self.color_steps, {}, Step.lessThan);
 
+    // See if we can better handle special cases like this.
+    // If we have a base velocity product, the units are expressed in
+    // Knots in the color table, but m/s from the radar.
+    if (std.mem.eql(u8, self.product.slice(), "BV") and std.mem.eql(u8, self.units.slice(), "KT")) {
+        self.unit_conversion_factor = 0.5144447;
+    }
+
     return self;
 }
 
@@ -122,12 +131,41 @@ pub fn deinit(self: Self) void {
 /// a free-form string bearing no canonical definition.
 pub fn getLookupTable(self: Self, comptime T: type, allocator: std.mem.Allocator, min_level: f32, max_level: f32) ![]@Vector(4, T) {
     const table = try allocator.alloc(@Vector(4, T), 256);
-    self.populateLookupTable(T, table, min_level, max_level);
+    self.populateLookupTable(T, table, min_level, max_level, 256);
     return table;
 }
 
-pub fn populateLookupTable(self: Self, comptime T: type, lut: []@Vector(4, T), min_level: f32, max_level: f32) void {
-    const increment = (max_level - min_level) / 254.0;
+/// Populates a pre-existing lookup table with interpolated values derived from the color steps
+/// within the given color table, and a set of `DecodingParameters` from the product, which specify
+/// how to relate te data levels therein to the physical values specified within the color table.
+///
+pub fn populateDynamicLookupTable(
+    self: Self,
+    comptime T: type,
+    lut: []@Vector(4, T),
+    decoding_properties: models.DecodingParameters,
+) void {
+    var max_level: f32 = undefined;
+    var min_level: f32 = undefined;
+    var increment: f32 = undefined;
+    var data_units: usize = undefined;
+
+    switch (decoding_properties) {
+        .MinWithIncrement => |v| {
+            increment = v.increment;
+            min_level = v.min_value;
+            max_level = @floatFromInt(v.num_levels);
+            max_level *= increment;
+            max_level += min_level;
+            data_units = @intCast(v.num_levels);
+        },
+        .EchoTops => {
+            data_units = 254;
+        },
+        .ScaledWithOffset => |v| {
+            data_units = v.max_data_level - v.leading_flags;
+        },
+    }
     var level = min_level;
 
     lut[0] = @splat(0.0);
@@ -138,16 +176,68 @@ pub fn populateLookupTable(self: Self, comptime T: type, lut: []@Vector(4, T), m
         @as(T, @floatFromInt(range_folded[3])),
     } else @splat(0.0);
 
-    for (2..256) |i| {
+    switch (decoding_properties) {
+        .MinWithIncrement => for (2..(data_units + 2)) |i| {
+            lut[i] = self.getInterpolatedColor(T, level);
+            level += increment;
+        },
+        .EchoTops => |v| for (2..(data_units + 2)) |i| {
+            lut[i] = self.getInterpolatedColor(
+                T,
+                @as(f32, @floatFromInt(i & v.data_mask)) / v.data_scale - v.data_offset,
+            );
+        },
+        .ScaledWithOffset => |v| for (v.leading_flags..(data_units + v.leading_flags)) |i| {
+            lut[i] = self.getInterpolatedColor(
+                T,
+                (@as(f32, @floatFromInt(i)) - v.offset) / v.scale,
+            );
+        },
+    }
+
+    if (data_units < 254) {
+        for ((data_units + 2)..256) |overflow| {
+            lut[overflow] = self.getInterpolatedColor(T, level);
+        }
+    }
+}
+
+/// Populates a pre-existing lookup table with interpolated values. Caller owns and manages the buffer
+/// out-of-band.
+///
+/// * `data_units` is the end of the number of valid data levels within the product.
+///   Valid ranges are from 0 to 254.
+///
+///
+/// See getLookupTable for further details.
+pub fn populateLookupTable(self: Self, comptime T: type, lut: []@Vector(4, T), min_level: f32, max_level: f32, data_units: usize) void {
+    const increment = (max_level - min_level) / @as(f32, @floatFromInt(data_units));
+    var level = min_level;
+
+    lut[0] = @splat(0.0);
+    lut[1] = if (self.range_folded) |range_folded| @Vector(4, T){
+        @as(T, @floatFromInt(range_folded[0])),
+        @as(T, @floatFromInt(range_folded[1])),
+        @as(T, @floatFromInt(range_folded[2])),
+        @as(T, @floatFromInt(range_folded[3])),
+    } else @splat(0.0);
+
+    for (2..(data_units + 2)) |i| {
         lut[i] = self.getInterpolatedColor(T, level);
         level += increment;
+    }
+    if (data_units < 254) {
+        for ((data_units + 2)..256) |overflow| {
+            lut[overflow] = self.getInterpolatedColor(T, level);
+        }
     }
 }
 
 /// Given a raw level value, produces a blended color value taken by performing liner interpolation between its two nearest
 /// color steps. Note that callers are **strongly** encouraged to use `getLookupTable()`, and to store the lookup table locally
 /// rater than using this method, as this method is O(N) with respect to the number of color steps.
-pub fn getInterpolatedColor(self: Self, comptime T: type, level: f32) @Vector(4, T) {
+pub fn getInterpolatedColor(self: Self, comptime T: type, radar_level: f32) @Vector(4, T) {
+    const level = radar_level * self.unit_conversion_factor;
     if (self.color_steps.len == 0 or level < self.color_steps[0].value) {
         return @Vector(4, T){ 0.0, 0.0, 0.0, 0.0 };
     }

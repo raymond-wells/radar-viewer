@@ -4,6 +4,7 @@ pub const friendly_names: []const [:0]const u8 = &.{
     "Base Reflectivity",
     "Base Velocity",
     "Correlation Coefficient",
+    "Enhanced Echo Tops",
 };
 
 pub const Product = struct {
@@ -35,6 +36,12 @@ pub const standard_products: []const Product = &.{
         .code_name = "N0C".*,
         .tilt_digit_index = 1,
         .tilt_levels = 4,
+    },
+    .{
+        .friendly_name_id = 3,
+        .code_name = "EET".*,
+        .tilt_digit_index = 0,
+        .tilt_levels = 1,
     },
 };
 
