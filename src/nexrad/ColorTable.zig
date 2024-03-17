@@ -131,7 +131,13 @@ pub fn deinit(self: Self) void {
 /// a free-form string bearing no canonical definition.
 pub fn getLookupTable(self: Self, comptime T: type, allocator: std.mem.Allocator, min_level: f32, max_level: f32) ![]@Vector(4, T) {
     const table = try allocator.alloc(@Vector(4, T), 256);
-    self.populateLookupTable(T, table, min_level, max_level, 256);
+    self.populateDynamicLookupTable(T, table, .{
+        .MinWithIncrement = .{
+            .min_value = min_level,
+            .num_levels = 254,
+            .increment = (max_level - min_level) / 254.0,
+        },
+    });
     return table;
 }
 
@@ -195,37 +201,6 @@ pub fn populateDynamicLookupTable(
         },
     }
 
-    if (data_units < 254) {
-        for ((data_units + 2)..256) |overflow| {
-            lut[overflow] = self.getInterpolatedColor(T, level);
-        }
-    }
-}
-
-/// Populates a pre-existing lookup table with interpolated values. Caller owns and manages the buffer
-/// out-of-band.
-///
-/// * `data_units` is the end of the number of valid data levels within the product.
-///   Valid ranges are from 0 to 254.
-///
-///
-/// See getLookupTable for further details.
-pub fn populateLookupTable(self: Self, comptime T: type, lut: []@Vector(4, T), min_level: f32, max_level: f32, data_units: usize) void {
-    const increment = (max_level - min_level) / @as(f32, @floatFromInt(data_units));
-    var level = min_level;
-
-    lut[0] = @splat(0.0);
-    lut[1] = if (self.range_folded) |range_folded| @Vector(4, T){
-        @as(T, @floatFromInt(range_folded[0])),
-        @as(T, @floatFromInt(range_folded[1])),
-        @as(T, @floatFromInt(range_folded[2])),
-        @as(T, @floatFromInt(range_folded[3])),
-    } else @splat(0.0);
-
-    for (2..(data_units + 2)) |i| {
-        lut[i] = self.getInterpolatedColor(T, level);
-        level += increment;
-    }
     if (data_units < 254) {
         for ((data_units + 2)..256) |overflow| {
             lut[overflow] = self.getInterpolatedColor(T, level);

@@ -182,17 +182,27 @@ fn importColorTableFromReader(self: *Self, reader: anytype) !*lib.AutoBoxed(Entr
         entry.value.table.product.constSlice(),
     ) orelse .BaseReflectivity;
 
-    const data_units: usize = switch (entry.value.product) {
-        .EnhancedEchoTops => 70,
-        else => 254,
+    const range = defs.Ranges[@intFromEnum(entry.value.product)];
+    const params: nexrad.models.DecodingParameters = switch (entry.value.product) {
+        .EnhancedEchoTops => .{ .EchoTops = .{
+            .topped_mask = 0x80,
+            .data_mask = 0x7f,
+            .data_scale = 1,
+            .data_offset = 2,
+        } },
+        else => .{
+            .MinWithIncrement = .{
+                .min_value = range[0],
+                .increment = (range[1] - range[0]) / 254.0,
+                .num_levels = 254,
+            },
+        },
     };
 
-    entry.value.table.populateLookupTable(
+    entry.value.table.populateDynamicLookupTable(
         f64,
         &entry.value.lut,
-        defs.Ranges[@intFromEnum(entry.value.product)][0],
-        defs.Ranges[@intFromEnum(entry.value.product)][1],
-        data_units,
+        params,
     );
 
     return entry;
