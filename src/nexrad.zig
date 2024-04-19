@@ -26,6 +26,7 @@ pub const utilities = @import("nexrad/utilities.zig");
 pub const io = @import("nexrad/io.zig");
 pub const definitions = @import("nexrad/definitions.zig");
 pub const products = @import("nexrad/products.zig");
+pub const models = @import("nexrad/models.zig");
 
 test {
     _ = @import("nexrad/definitions.zig");

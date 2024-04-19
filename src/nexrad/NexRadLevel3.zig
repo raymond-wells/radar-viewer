@@ -243,36 +243,30 @@ pub fn getEpochalRadarTime(self: Self) u64 {
     return @as(u64, @intCast(self.volume_scan_date - 1)) * 86400 + @as(u64, @intCast(self.volume_scan_time));
 }
 
-test "Decode Radar Image" {
-    // Skip this test at the moment, as it requires a real radar image
-    // that is not provided within the Git repository. Will rewrite this
-    // test later on to use a generated artifact.
-    if (true) {
-        return error.SkipZigTest;
-    }
+test "Decode Header" {
+    const buf = try std.testing.allocator.alloc(u8, 1024);
+    defer std.testing.allocator.free(buf);
 
-    var level3 = Self.init(std.testing.allocator);
-    defer level3.deinit();
+    var fbs = std.io.fixedBufferStream(buf);
+    const writer = fbs.writer();
+    try writer.writeInt(i16, -1, .big);
+    try writer.writeInt(i32, 1000.0, .big);
+    try writer.writeInt(i32, -500.0, .big);
+    try writer.writeInt(i16, 7123, .big);
+    try writer.writeInt(i16, 94, .big);
+    try writer.writeInt(i16, 1, .big);
+    try writer.writeInt(i16, 2, .big);
 
-    var file = try std.fs.cwd().openFile("assets/test-radar.bin", .{});
-    defer file.close();
+    fbs.reset();
+    var radar = init(std.testing.allocator);
+    defer radar.deinit();
+    try radar.decodeHeader(fbs.reader());
 
-    var bufReader = std.io.bufferedReader(file.reader());
-    const stream = bufReader.reader();
-
-    try level3.decodeFile(stream);
-
-    try std.testing.expectEqual(@round(level3.radar_latitude), 35);
-    try std.testing.expectEqual(@round(level3.radar_longitude), -97);
-    try std.testing.expectEqual(level3.radar_height, 1277);
-    try std.testing.expectEqual(level3.product_code, 94);
-    try std.testing.expectEqual(level3.volume_scan_number, 39);
-
-    // The expected time of the radar scan:
-    // datetime.datetime.utcfromtimestamp(0) + datetime.timedelta(days=19737) + datetime.timedelta(seconds=80766) = datetime.datetime(2024, 1, 15, 22, 26, 6)
-    try std.testing.expectEqual(level3.volume_scan_date, 19737);
-    try std.testing.expectEqual(level3.volume_scan_time, 80766);
-    try std.testing.expectEqual(level3.getEpochalRadarTime(), 1705357566);
-    try std.testing.expectEqual(level3.num_radials, 360);
-    try std.testing.expectEqual(level3.num_range_bins, 460);
+    try std.testing.expectEqual(radar.radar_latitude, 1.0);
+    try std.testing.expectEqual(radar.radar_longitude, -0.5);
+    try std.testing.expectEqual(radar.radar_height, 7123);
+    try std.testing.expectEqual(radar.product_code, 94);
+    try std.testing.expectEqual(radar.operational_mode, 1);
+    try std.testing.expectEqual(radar.volume_coverage_pattern, 2);
+    try std.testing.expect(!radar.product_loaded);
 }
