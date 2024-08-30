@@ -22,8 +22,7 @@ pub const ProductAssociation = enum {
     EnhancedEchoTops,
 };
 
-pub const ProductCodeToAssociation = std.ComptimeStringMap(
-    ProductAssociation,
+pub const ProductCodeToAssociation = std.StaticStringMap(ProductAssociation).initComptime(
     &.{
         .{ "BR", .BaseReflectivity },
         .{ "BV", .BaseVelocity },

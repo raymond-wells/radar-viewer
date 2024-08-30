@@ -332,7 +332,7 @@ pub const RadarDataProvider = extern struct {
                 return error.RadarFetchFailed;
             }
 
-            try cache_dir.writeFile(radarFile, gobject.gBytesToSlice(response_bytes));
+            try cache_dir.writeFile(.{ .sub_path = radarFile, .data = gobject.gBytesToSlice(response_bytes) });
         }
 
         var radar_data = try cache_dir.openFile(radarFile, .{});
