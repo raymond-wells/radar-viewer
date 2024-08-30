@@ -12,7 +12,7 @@ See [COPYING](COPYING) for details.
 
 ## Requirements
 
-* Zig Master (target version 0.12.0) 
+* Zig 0.13.0
 * Gtk+-4.0
 * Shumate 1.0 (libshumate)
 * Libsoup 3.0

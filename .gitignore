@@ -4,6 +4,7 @@
 tmp/
 zig-cache/
 zig-out/
+.zig-cache/
 .ccls-root
 compile-commands.json
 src/assets/resources.gresource

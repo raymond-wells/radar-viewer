@@ -21,7 +21,7 @@ pub const MessageType = enum(u8) {
     DigitalRadarData = 1,
 };
 
-const product_code_to_product_string = std.ComptimeStringMap([]const u8, .{
+const product_code_to_product_string = std.StaticStringMap([]const u8).initComptime(.{
     .{ "N0R", "DS.p19r0" },
     .{ "N1R", "DS.p19r1" },
     .{ "N2R", "DS.p19r2" },
