@@ -149,8 +149,11 @@ pub fn RegisterType(
             getParentClass(g_type_id.?).finalize.?(@ptrCast(self));
         }
 
-        fn initClass(class: *T.Class) void {
-            var object_class = @as(*c.GObjectClass, @alignCast(@ptrCast(class)));
+        fn initClass(class: *T.Class) callconv(.C) void {
+            if (@intFromPtr(class) == 0x0) {
+                std.debug.print("Class pointer is null.\n", .{});
+            }
+            var object_class = @as(*c.GObjectClass, @ptrCast(class));
 
             if (@hasDecl(T, "setProperty")) {
                 object_class.get_property = @ptrCast(&T.getProperty);
@@ -230,10 +233,10 @@ test "Subclasses of Zig types." {
 
     try std.testing.expectEqual(Parent.getType(), c.g_type_parent(Child.getType()));
 
-    const instance: *Child = @alignCast(@ptrCast(c.g_object_new(
+    const instance: *Child = @ptrCast(c.g_object_new(
         Child.getType(),
         @ptrFromInt(0),
-    )));
+    ));
 
     try std.testing.expectEqual(c.G_OBJECT_TYPE(instance), Child.getType());
 

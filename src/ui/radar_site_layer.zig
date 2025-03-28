@@ -38,7 +38,7 @@ pub const RadarSiteLayer = struct {
     pub const Class = struct {
         parent_class: c.GObjectClass,
 
-        pub fn initClass(class: *Class) void {
+        pub fn initClass(class: *Class) callconv(.C) void {
             class.parent_class.constructed = @ptrCast(&constructed);
 
             c.g_object_class_install_property(
@@ -92,7 +92,7 @@ pub const RadarSiteLayer = struct {
 
     pub fn init(_: *Self) void {}
 
-    pub fn dispose(self: *Self) void {
+    pub fn dispose(self: *Self) callconv(.C) void {
         c.g_clear_object(@ptrCast(&self.marker_layer));
 
         for (&self.markers) |*marker| {
@@ -100,7 +100,7 @@ pub const RadarSiteLayer = struct {
         }
     }
 
-    pub fn constructed(self: *Self) void {
+    pub fn constructed(self: *Self) callconv(.C) void {
         gobject.getParentClass(Self.getType()).constructed.?(@ptrCast(self));
 
         self.marker_layer = c.shumate_marker_layer_new(self.viewport).?;
@@ -141,7 +141,7 @@ pub const RadarSiteLayer = struct {
         );
     }
 
-    pub fn getProperty(self: *Self, id: c.guint, value: *c.GValue, _: *c.GParamSpec) void {
+    pub fn getProperty(self: *Self, id: c.guint, value: *c.GValue, _: *c.GParamSpec) callconv(.C) void {
         switch (id) {
             1 => c.g_value_set_object(value, @ptrCast(self.viewport)),
             2 => {
@@ -157,7 +157,7 @@ pub const RadarSiteLayer = struct {
         }
     }
 
-    pub fn setProperty(self: *Self, id: c.guint, value: *c.GValue, _: *c.GParamSpec) void {
+    pub fn setProperty(self: *Self, id: c.guint, value: *c.GValue, _: *c.GParamSpec) callconv(.C) void {
         switch (id) {
             1 => self.viewport = @alignCast(@ptrCast(c.g_value_get_object(value))),
             2 => {
@@ -168,7 +168,7 @@ pub const RadarSiteLayer = struct {
         }
     }
 
-    fn onMarkerSelected(self: *Self, marker: *c.ShumateMarker, _: c.gpointer) void {
+    fn onMarkerSelected(self: *Self, marker: *c.ShumateMarker, _: c.gpointer) callconv(.C) void {
         const marker_index = @as(*c.guint64, @alignCast(@ptrCast(c.g_object_get_data(@ptrCast(marker), "index")))).*;
         c.g_object_set(self, "selected-index", marker_index, gobject.end_of_args);
         c.gtk_widget_set_visible(@ptrCast(c.shumate_marker_get_child(marker)), 0);
@@ -181,7 +181,7 @@ pub const RadarSiteLayer = struct {
         );
     }
 
-    fn onMarkerDeselected(_: *Self, marker: *c.ShumateMarker, _: c.gpointer) void {
+    fn onMarkerDeselected(_: *Self, marker: *c.ShumateMarker, _: c.gpointer) callconv(.C) void {
         c.gtk_widget_set_visible(c.shumate_marker_get_child(marker), 1);
     }
 };

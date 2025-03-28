@@ -134,19 +134,19 @@ pub fn Boxed(comptime T: type, comptime destructor: anytype) type {
             c.g_boxed_free(getType(), self);
         }
 
-        fn copyFunc(self: *Self) *Self {
+        fn copyFunc(self: *Self) callconv(.C) *Self {
             c.g_ref_count_inc(&self.ref_count);
             return self;
         }
 
-        fn freeFunc(self: *Self) void {
+        fn freeFunc(self: *Self) callconv(.C) void {
             if (c.g_ref_count_dec(&self.ref_count) == 1) {
                 switch (@typeInfo(@TypeOf(destructor))) {
-                    .Fn => |t| switch (@typeInfo(t.params[0].type.?)) {
-                        .Pointer => destructor(&self.value),
+                    .@"fn" => |t| switch (@typeInfo(t.params[0].type.?)) {
+                        .pointer => destructor(&self.value),
                         else => destructor(self.value),
                     },
-                    .Void => {},
+                    .void => {},
                     else => @compileError("Unrecognized destructor type: " ++ @typeName(@TypeOf(destructor))),
                 }
 

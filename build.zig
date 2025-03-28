@@ -20,15 +20,13 @@ pub fn build(b: *std.Build) void {
         "glib-compile-resources",
         "--target",
     });
-    gresource_compile.extra_file_dependencies = &.{
-        "assets/main.css",
-    };
+    gresource_compile.file_inputs.append(b.allocator, .{ .cwd_relative = "assets/main.css" }) catch @panic("OOM");
 
     const resources_file = gresource_compile.addOutputFileArg("resources.gresource");
     gresource_compile.addFileArg(.{ .cwd_relative = "resources.gresource.xml" });
 
     const copy_resource = b.addWriteFiles();
-    copy_resource.addCopyFileToSource(
+    _ = copy_resource.addCopyFile(
         resources_file,
         "src/assets/resources.gresource",
     );

@@ -54,7 +54,7 @@ pub const NexradLayer = struct {
     pub const Class = extern struct {
         parent: c.ShumateLayerClass,
 
-        pub fn initClass(self: *Class) void {
+        pub fn initClass(self: *Class) callconv(.C) void {
             const widget_class: *c.GtkWidgetClass = @ptrCast(self);
 
             widget_class.snapshot = @ptrCast(&onSnapshot);
@@ -110,14 +110,14 @@ pub const NexradLayer = struct {
     ///
     /// When the user zooms or pans the viewport, the application will need to redraw the layer.
     ///
-    fn onViewportChanged(self: *Self, _: *c.GParamSpec, _: *c.ShumateViewport) void {
+    fn onViewportChanged(self: *Self, _: *c.GParamSpec, _: *c.ShumateViewport) callconv(.C) void {
         c.gtk_widget_queue_draw(@ptrCast(self));
     }
 
     ///
     /// Renders the internal radar texture to the widget at the correct location.
     ///
-    fn onSnapshot(self: *Self, snapshot: *c.GtkSnapshot) void {
+    fn onSnapshot(self: *Self, snapshot: *c.GtkSnapshot) callconv(.C) void {
         if (!self.should_draw) {
             return;
         }
@@ -193,7 +193,7 @@ pub const NexradLayer = struct {
     }
 
     /// Triggers a re-draw of the backing radar image texture upon new data received from the provider.
-    fn onRadarDataUpdated(self: *Self, data_ptr: *BoxedRadarData, _: c.gpointer, _: c.gpointer) void {
+    fn onRadarDataUpdated(self: *Self, data_ptr: *BoxedRadarData, _: c.gpointer, _: c.gpointer) callconv(.C) void {
         const radar_data = &data_ptr.value;
         self.should_draw = false;
         self.radar_latitude = radar_data.radar_latitude;
@@ -216,7 +216,7 @@ pub const NexradLayer = struct {
         try self.redrawRadarTexture(&radar_data.value);
     }
 
-    fn radarTextureUpdateFinished(self: *Self, result: *c.GAsyncResult, _: *anyopaque) void {
+    fn radarTextureUpdateFinished(self: *Self, result: *c.GAsyncResult, _: *anyopaque) callconv(.C) void {
         // Since we created a reference to the radar data at the task call site,
         // we'll need to release the reference corresponding reference here in order to ensure
         // that it get cleaned up properly.

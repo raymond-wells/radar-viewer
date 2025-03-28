@@ -76,7 +76,7 @@ pub const RadarDataProvider = extern struct {
 
         pub var signals: [1]c.guint = undefined;
 
-        pub fn initClass(self: *Class) void {
+        pub fn initClass(self: *Class) callconv(.C) void {
             self.parent.constructed = @ptrCast(&constructed);
 
             c.g_object_class_install_property(
@@ -159,7 +159,7 @@ pub const RadarDataProvider = extern struct {
         }
     };
 
-    pub fn new(allocator: *std.mem.Allocator, cache_dir: *c.gchar) *Self {
+    pub fn new(allocator: *std.mem.Allocator, cache_dir: *c.gchar) callconv(.C) *Self {
         return @alignCast(@ptrCast(c.g_object_new(
             Self.getType(),
             "allocator",
@@ -194,7 +194,7 @@ pub const RadarDataProvider = extern struct {
         );
     }
 
-    pub fn getProperty(self: *Self, property_id: c.guint, value: *c.GValue, _: *c.GParamSpec) void {
+    pub fn getProperty(self: *Self, property_id: c.guint, value: *c.GValue, _: *c.GParamSpec) callconv(.C) void {
         switch (@as(Properties, @enumFromInt(property_id))) {
             .Allocator => c.g_value_set_pointer(value, @ptrCast(self.allocator)),
             .CacheRoot => c.g_value_set_string(value, self.cache_root.str),
@@ -204,7 +204,7 @@ pub const RadarDataProvider = extern struct {
         }
     }
 
-    pub fn setProperty(self: *Self, property_id: c.guint, value: *c.GValue, _: *c.GParamSpec) void {
+    pub fn setProperty(self: *Self, property_id: c.guint, value: *c.GValue, _: *c.GParamSpec) callconv(.C) void {
         switch (@as(Properties, @enumFromInt(property_id))) {
             .Allocator => {
                 self.allocator = @alignCast(@ptrCast(c.g_value_get_pointer(value)));
@@ -225,19 +225,19 @@ pub const RadarDataProvider = extern struct {
         }
     }
 
-    pub fn init(self: *Self) void {
+    pub fn init(self: *Self) callconv(.C) void {
         self.cache_root = c.g_string_new("");
         self.radar_site = c.g_string_new("");
         self.radar_product = c.g_string_new("");
         self.last_scan_time = 0.0;
     }
 
-    pub fn dispose(self: *Self) void {
+    pub fn dispose(self: *Self) callconv(.C) void {
         self.clearUpdateTimeout();
         c.g_clear_object(@ptrCast(&self.session));
     }
 
-    pub fn finalize(self: *Self) void {
+    pub fn finalize(self: *Self) callconv(.C) void {
         _ = c.g_string_free(self.cache_root, 1);
         _ = c.g_string_free(self.radar_site, 1);
         _ = c.g_string_free(self.radar_product, 1);
@@ -345,7 +345,7 @@ pub const RadarDataProvider = extern struct {
         return nex_rad_data;
     }
 
-    fn updateCheckFinished(self: *Self, result: *c.GAsyncResult, data: c.gpointer) void {
+    fn updateCheckFinished(self: *Self, result: *c.GAsyncResult, data: c.gpointer) callconv(.C) void {
         _ = data;
 
         var g_error: ?*c.GError = null;
@@ -384,7 +384,7 @@ pub const RadarDataProvider = extern struct {
         };
     }
 
-    fn constructed(self: *Self) void {
+    fn constructed(self: *Self) callconv(.C) void {
         self.session = c.soup_session_new();
         c.soup_session_set_user_agent(self.session, "radar-viewer/0.1.dev0");
     }

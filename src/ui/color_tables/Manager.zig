@@ -68,11 +68,11 @@ pub fn new(allocator: std.mem.Allocator) *Self {
     return self;
 }
 
-pub fn init(self: *Self) void {
+pub fn init(self: *Self) callconv(.C) void {
     self.entry_list = .{};
 }
 
-pub fn finalize(self: *Self) void {
+pub fn finalize(self: *Self) callconv(.C) void {
     for (self.entry_list.items) |entry| {
         entry.unref();
     }
@@ -84,7 +84,7 @@ pub fn finalize(self: *Self) void {
 /// which *may* (but should not ever) fail silently.
 ///
 pub fn loadDefaultColorTables(self: *Self) void {
-    inline for (@typeInfo(assets.color_tables).Struct.decls) |table_field_decl| {
+    inline for (@typeInfo(assets.color_tables).@"struct".decls) |table_field_decl| {
         const table = @field(assets.color_tables, table_field_decl.name);
         const task = ImportColorTableFromBufferTask.runInTaskThreadSync(self, c.g_bytes_new(table.ptr, table.len));
         defer c.g_object_unref(task);

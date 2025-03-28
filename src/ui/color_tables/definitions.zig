@@ -34,7 +34,7 @@ pub const ProductCodeToAssociation = std.StaticStringMap(ProductAssociation).ini
 /// Static ranges, deprecated as static ranges are the "old way" of decoding values.
 /// The new data level decoding scheme will use dynamic LUTs to support more accurate\
 /// conversion of data, at the cost of a little performance.
-pub const Ranges: [@typeInfo(ProductAssociation).Enum.fields.len]struct { f32, f32 } = .{
+pub const Ranges: [@typeInfo(ProductAssociation).@"enum".fields.len]struct { f32, f32 } = .{
     .{ -32.0, 95.0 },
     .{ -247.0, 245.0 },
     .{ 0.2, 1.05 },

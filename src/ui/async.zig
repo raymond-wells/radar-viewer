@@ -79,10 +79,10 @@ pub fn asyncTaskWrapper(comptime thread_func: anytype, comptime finish_callback:
             };
 
             switch (@typeInfo(@TypeOf(return_value))) {
-                .Bool => c.g_task_return_boolean(task, if (return_value) 1 else 0),
-                .Int => c.g_task_return_int(task, @intCast(return_value)),
-                .Void => c.g_task_return_boolean(task, 1),
-                .Pointer => c.g_task_return_pointer(task, @ptrCast(return_value), null),
+                .bool => c.g_task_return_boolean(task, if (return_value) 1 else 0),
+                .int => c.g_task_return_int(task, @intCast(return_value)),
+                .void => c.g_task_return_boolean(task, 1),
+                .pointer => c.g_task_return_pointer(task, @ptrCast(return_value), null),
                 inline else => @compileError("Unrecognized return type " ++ @typeName(@TypeOf(return_value))),
             }
         }
