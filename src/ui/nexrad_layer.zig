@@ -200,7 +200,7 @@ pub const NexradLayer = struct {
         self.radar_longitude = radar_data.radar_longitude;
         self.radial_length_meters = switch (radar_data.product_code) {
             94 => 230000.0,
-            99, 159, 161 => 150012.1,
+            99, 59, 161, 163 => 150012.1,
             180, 182 => 44448.02,
             135 => 172236.1,
             else => 0.0,
@@ -256,6 +256,7 @@ pub const NexradLayer = struct {
             161 => .CorrelationCoefficient,
             135 => .EnhancedEchoTops,
             159 => .DifferentialReflectivity,
+            163 => .SpecificDifferentialPhase,
             else => .BaseReflectivity,
         };
 

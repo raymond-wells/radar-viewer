@@ -21,6 +21,7 @@ pub const ProductAssociation = enum {
     CorrelationCoefficient,
     EnhancedEchoTops,
     DifferentialReflectivity,
+    SpecificDifferentialPhase,
 };
 
 pub const ProductCodeToAssociation = std.StaticStringMap(ProductAssociation).initComptime(
@@ -30,6 +31,7 @@ pub const ProductCodeToAssociation = std.StaticStringMap(ProductAssociation).ini
         .{ "CC", .CorrelationCoefficient },
         .{ "EET", .EnhancedEchoTops },
         .{ "DR", .DifferentialReflectivity },
+        .{ "SDP", .SpecificDifferentialPhase },
     },
 );
 
@@ -42,6 +44,7 @@ pub const Ranges: [@typeInfo(ProductAssociation).@"enum".fields.len]struct { f32
     .{ 0.2, 1.05 },
     .{ 0.0, 75.0 },
     .{ -8.0, 8.0 },
+    .{ 0.0, 45.0 },
 };
 
 pub const number_of_products = std.enums.values(ProductAssociation).len;
