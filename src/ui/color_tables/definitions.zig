@@ -20,6 +20,7 @@ pub const ProductAssociation = enum {
     BaseVelocity,
     CorrelationCoefficient,
     EnhancedEchoTops,
+    DifferentialReflectivity,
 };
 
 pub const ProductCodeToAssociation = std.StaticStringMap(ProductAssociation).initComptime(
@@ -28,17 +29,19 @@ pub const ProductCodeToAssociation = std.StaticStringMap(ProductAssociation).ini
         .{ "BV", .BaseVelocity },
         .{ "CC", .CorrelationCoefficient },
         .{ "EET", .EnhancedEchoTops },
+        .{ "DR", .DifferentialReflectivity },
     },
 );
 
 /// Static ranges, deprecated as static ranges are the "old way" of decoding values.
-/// The new data level decoding scheme will use dynamic LUTs to support more accurate\
+/// The new data level decoding scheme will use dynamic LUTs to support more accurate
 /// conversion of data, at the cost of a little performance.
 pub const Ranges: [@typeInfo(ProductAssociation).@"enum".fields.len]struct { f32, f32 } = .{
     .{ -32.0, 95.0 },
     .{ -247.0, 245.0 },
     .{ 0.2, 1.05 },
     .{ 0.0, 75.0 },
+    .{ -8.0, 8.0 },
 };
 
 pub const number_of_products = std.enums.values(ProductAssociation).len;
