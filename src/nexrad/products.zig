@@ -5,6 +5,7 @@ pub const friendly_names: []const [:0]const u8 = &.{
     "Base Velocity",
     "Correlation Coefficient",
     "Enhanced Echo Tops",
+    "Differential Reflectivity",
 };
 
 pub const Product = struct {
@@ -18,32 +19,32 @@ pub const Product = struct {
     }
 };
 
-pub const standard_products: []const Product = &.{
-    .{
-        .friendly_name_id = 0,
-        .code_name = "N0Q".*,
-        .tilt_digit_index = 1,
-        .tilt_levels = 4,
-    },
-    .{
-        .friendly_name_id = 1,
-        .code_name = "NOU".*,
-        .tilt_digit_index = 1,
-        .tilt_levels = 4,
-    },
-    .{
-        .friendly_name_id = 2,
-        .code_name = "N0C".*,
-        .tilt_digit_index = 1,
-        .tilt_levels = 4,
-    },
-    .{
-        .friendly_name_id = 3,
-        .code_name = "EET".*,
-        .tilt_digit_index = 0,
-        .tilt_levels = 1,
-    },
-};
+pub const standard_products: []const Product = &.{ .{
+    .friendly_name_id = 0,
+    .code_name = "N0Q".*,
+    .tilt_digit_index = 1,
+    .tilt_levels = 4,
+}, .{
+    .friendly_name_id = 1,
+    .code_name = "NOU".*,
+    .tilt_digit_index = 1,
+    .tilt_levels = 4,
+}, .{
+    .friendly_name_id = 2,
+    .code_name = "N0C".*,
+    .tilt_digit_index = 1,
+    .tilt_levels = 4,
+}, .{
+    .friendly_name_id = 3,
+    .code_name = "EET".*,
+    .tilt_digit_index = 0,
+    .tilt_levels = 1,
+}, .{
+    .friendly_name_id = 4,
+    .code_name = "N0X".*,
+    .tilt_digit_index = 1,
+    .tilt_levels = 4,
+} };
 
 pub const tdwr_products: []const Product = &.{
     .{
