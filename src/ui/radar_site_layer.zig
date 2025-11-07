@@ -17,7 +17,7 @@
 const std = @import("std");
 const gobject = @import("gobject.zig");
 const lib = @import("../lib.zig");
-const c = lib.c;
+const c = lib.c.c;
 const assets = @import("../assets/bundled_assets.zig");
 
 pub const RadarSiteLayer = struct {
@@ -28,7 +28,7 @@ pub const RadarSiteLayer = struct {
     marker_indices: [assets.radar_sites.len]c.guint64,
     const Self = @This();
 
-    pub usingnamespace gobject.RegisterType(
+    pub const Type = gobject.RegisterType(
         Self,
         &c.g_object_get_type,
         "RadarSiteLayer",
@@ -65,7 +65,7 @@ pub const RadarSiteLayer = struct {
 
             _ = c.g_signal_new(
                 "site-changed",
-                Self.getType(),
+                Self.Type.getId(),
                 c.G_SIGNAL_RUN_LAST | c.G_SIGNAL_DETAILED,
                 0,
                 null,
@@ -80,8 +80,8 @@ pub const RadarSiteLayer = struct {
     };
 
     pub fn new(viewport: ?*c.ShumateViewport) *Self {
-        const self: *Self = @alignCast(@ptrCast(c.g_object_new(
-            Self.getType(),
+        const self: *Self = @ptrCast(@alignCast(c.g_object_new(
+            Self.Type.getId(),
             "viewport",
             viewport,
             gobject.end_of_args,
@@ -101,7 +101,7 @@ pub const RadarSiteLayer = struct {
     }
 
     pub fn constructed(self: *Self) callconv(.C) void {
-        gobject.getParentClass(Self.getType()).constructed.?(@ptrCast(self));
+        gobject.getParentClass(Self.Type.getId()).constructed.?(@ptrCast(self));
 
         self.marker_layer = c.shumate_marker_layer_new(self.viewport).?;
 
@@ -110,12 +110,12 @@ pub const RadarSiteLayer = struct {
             index.* = i;
             const image = c.gtk_image_new_from_icon_name("radar-site");
             const css_classes: []const ?[*:0]const u8 = &.{ "radar-site", null };
-            c.gtk_widget_set_css_classes(@ptrCast(image), @constCast(@ptrCast(css_classes)));
+            c.gtk_widget_set_css_classes(@ptrCast(image), @ptrCast(@constCast(css_classes)));
             c.gtk_widget_set_tooltip_text(@ptrCast(image), site.name.ptr);
             c.shumate_marker_set_child(marker.*, image);
             c.shumate_marker_set_selectable(marker.*, 1);
             c.shumate_location_set_location(@ptrCast(marker.*), @floatCast(site.lat), @floatCast(site.lon));
-            c.g_object_set_data(@ptrCast(marker.*), "site", @constCast(@ptrCast(&site)));
+            c.g_object_set_data(@ptrCast(marker.*), "site", @ptrCast(@constCast(&site)));
             c.g_object_set_data(@ptrCast(marker.*), "index", @ptrCast(index));
             c.shumate_marker_layer_add_marker(self.marker_layer, @ptrCast(marker.*));
         }
@@ -147,10 +147,10 @@ pub const RadarSiteLayer = struct {
             2 => {
                 const markers = c.shumate_marker_layer_get_selected(self.marker_layer);
                 const selected = c.g_list_first(markers);
-                const selected_marker: *c.GObject = @alignCast(@ptrCast(selected.*.data));
+                const selected_marker: *c.GObject = @ptrCast(@alignCast(selected.*.data));
                 c.g_value_set_uint64(
                     value,
-                    @as(*c.guint64, @alignCast(@ptrCast(c.g_object_get_data(selected_marker, "index")))).*,
+                    @as(*c.guint64, @ptrCast(@alignCast(c.g_object_get_data(selected_marker, "index")))).*,
                 );
             },
             else => {},
@@ -159,7 +159,7 @@ pub const RadarSiteLayer = struct {
 
     pub fn setProperty(self: *Self, id: c.guint, value: *c.GValue, _: *c.GParamSpec) callconv(.C) void {
         switch (id) {
-            1 => self.viewport = @alignCast(@ptrCast(c.g_value_get_object(value))),
+            1 => self.viewport = @ptrCast(@alignCast(c.g_value_get_object(value))),
             2 => {
                 const selected = c.g_value_get_uint64(value);
                 _ = c.shumate_marker_layer_select_marker(self.marker_layer, self.markers[selected]);
@@ -169,7 +169,7 @@ pub const RadarSiteLayer = struct {
     }
 
     fn onMarkerSelected(self: *Self, marker: *c.ShumateMarker, _: c.gpointer) callconv(.C) void {
-        const marker_index = @as(*c.guint64, @alignCast(@ptrCast(c.g_object_get_data(@ptrCast(marker), "index")))).*;
+        const marker_index = @as(*c.guint64, @ptrCast(@alignCast(c.g_object_get_data(@ptrCast(marker), "index")))).*;
         c.g_object_set(self, "selected-index", marker_index, gobject.end_of_args);
         c.gtk_widget_set_visible(@ptrCast(c.shumate_marker_get_child(marker)), 0);
         c.g_signal_emit_by_name(

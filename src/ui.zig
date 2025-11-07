@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 const std = @import("std");
-const c = @import("lib.zig").c;
+const c = @import("lib.zig").c.c;
 const assets = @import("assets/bundled_assets.zig");
 const gobject = @import("ui/gobject.zig");
 const nexrad = @import("nexrad.zig");
@@ -46,7 +46,7 @@ pub const Application = struct {
         parent_class: c.GtkApplicationClass,
     };
 
-    pub usingnamespace gobject.RegisterType(
+    pub const Type = gobject.RegisterType(
         Self,
         &c.gtk_application_get_type,
         "RadarViewerApplication",
@@ -55,7 +55,7 @@ pub const Application = struct {
 
     pub fn new(allocator: std.mem.Allocator) *Self {
         const object = c.g_object_new(
-            Self.getType(),
+            Self.Type.getId(),
             "application-id",
             "org.rwells.RadarViewer",
             "flags",
@@ -71,19 +71,19 @@ pub const Application = struct {
             c.G_CONNECT_DEFAULT,
         );
 
-        const self: *Self = @alignCast(@ptrCast(object));
+        const self: *Self = @ptrCast(@alignCast(object));
         self.allocator = allocator;
         self.provider = RadarDataProvider.new(&self.allocator, self.cache_dir.str);
 
         return self;
     }
 
-    pub fn init(self: *Self) callconv(.C) void {
+    pub fn init(self: *Self) callconv(.c) void {
         self.cache_dir = c.g_string_new(c.g_get_user_cache_dir());
         self.cache_dir = c.g_string_append(self.cache_dir, "/org.rwells.RadarViewer");
     }
 
-    pub fn finalize(self: *Self) callconv(.C) void {
+    pub fn finalize(self: *Self) callconv(.c) void {
         _ = c.g_string_free(self.cache_dir, 1);
         c.g_object_unref(self.provider);
         c.g_object_unref(self.color_table_manager);
@@ -92,7 +92,7 @@ pub const Application = struct {
     pub fn getProperty(_: *c.GObject, _: c.guint, _: *c.GValue, _: *c.GParamSpec) void {}
     pub fn setProperty(_: *c.GObject, _: c.guint, _: *c.GValue, _: *c.GParamSpec) void {}
 
-    fn activate(self: *Self, _: c.gpointer) callconv(.C) void {
+    fn activate(self: *Self, _: c.gpointer) callconv(.c) void {
         registerCustomResources();
         self.color_table_manager = color_tables.Manager.new(self.allocator);
         self.color_table_manager.loadDefaultColorTables();
@@ -156,7 +156,7 @@ pub const Application = struct {
         self.syncProductModelWithTable();
         c.gtk_drop_down_set_enable_search(@ptrCast(self.product_selector), 1);
         c.gtk_drop_down_set_selected(@ptrCast(self.product_selector), 0);
-        c.gtk_header_bar_pack_end(@ptrCast(header_bar), @alignCast(@ptrCast(self.product_selector)));
+        c.gtk_header_bar_pack_end(@ptrCast(header_bar), @ptrCast(@alignCast(self.product_selector)));
         _ = c.g_signal_connect_data(
             @ptrCast(self.product_selector),
             "notify::selected-item",
@@ -170,13 +170,13 @@ pub const Application = struct {
         for (assets.radar_sites) |site| {
             c.gtk_string_list_append(site_model, site.name.ptr);
         }
-        self.site_selector = @alignCast(@ptrCast(c.gtk_drop_down_new(
+        self.site_selector = @ptrCast(@alignCast(c.gtk_drop_down_new(
             @ptrCast(site_model),
             c.gtk_property_expression_new(c.gtk_string_object_get_type(), null, "string"),
         )));
         c.gtk_drop_down_set_enable_search(@ptrCast(self.site_selector), 1);
         c.gtk_drop_down_set_selected(@ptrCast(self.site_selector), 87);
-        c.gtk_header_bar_pack_end(@ptrCast(header_bar), @alignCast(@ptrCast(self.site_selector)));
+        c.gtk_header_bar_pack_end(@ptrCast(header_bar), @ptrCast(@alignCast(self.site_selector)));
         _ = c.g_signal_connect_data(
             @ptrCast(self.site_selector),
             "notify::selected-item",
@@ -186,20 +186,20 @@ pub const Application = struct {
             c.G_CONNECT_SWAPPED,
         );
 
-        self.radar_options = @alignCast(@ptrCast(self.createRadarOptions()));
+        self.radar_options = @ptrCast(@alignCast(self.createRadarOptions()));
         _ = c.g_object_bind_property(
-            @alignCast(@ptrCast(options_toggle)),
+            @ptrCast(@alignCast(options_toggle)),
             "active",
-            @alignCast(@ptrCast(self.radar_options)),
+            @ptrCast(@alignCast(self.radar_options)),
             "visible",
             c.G_BINDING_DEFAULT,
         );
 
         const root_pane = c.gtk_box_new(c.GTK_ORIENTATION_HORIZONTAL, 0);
-        c.gtk_box_append(@ptrCast(root_pane), @alignCast(@ptrCast(box)));
+        c.gtk_box_append(@ptrCast(root_pane), @ptrCast(@alignCast(box)));
         c.gtk_box_append(@ptrCast(root_pane), self.radar_options);
-        c.gtk_widget_set_hexpand(@alignCast(@ptrCast(box)), 1);
-        c.gtk_window_set_child(@ptrCast(window), @alignCast(@ptrCast(root_pane)));
+        c.gtk_widget_set_hexpand(@ptrCast(@alignCast(box)), 1);
+        c.gtk_window_set_child(@ptrCast(window), @ptrCast(@alignCast(root_pane)));
 
         c.gtk_widget_hide(self.radar_options);
 
@@ -214,22 +214,22 @@ pub const Application = struct {
             self.color_table_manager,
         );
         c.shumate_simple_map_add_overlay_layer(self.simple_map, @ptrCast(self.radar));
-        c.gtk_box_append(@ptrCast(box), @alignCast(@ptrCast(self.simple_map)));
+        c.gtk_box_append(@ptrCast(box), @ptrCast(@alignCast(self.simple_map)));
 
         const site_layer = RadarSiteLayer.new(c.shumate_map_get_viewport(self.map));
-        c.gtk_widget_set_visible(@alignCast(@ptrCast(site_layer.marker_layer)), 0);
-        c.shumate_simple_map_add_overlay_layer(self.simple_map, @alignCast(@ptrCast(site_layer.marker_layer)));
+        c.gtk_widget_set_visible(@ptrCast(@alignCast(site_layer.marker_layer)), 0);
+        c.shumate_simple_map_add_overlay_layer(self.simple_map, @ptrCast(@alignCast(site_layer.marker_layer)));
         _ = c.g_object_bind_property(
-            @alignCast(@ptrCast(self.site_selector)),
+            @ptrCast(@alignCast(self.site_selector)),
             "selected",
-            @alignCast(@ptrCast(site_layer)),
+            @ptrCast(@alignCast(site_layer)),
             "selected-index",
             c.G_BINDING_BIDIRECTIONAL,
         );
         _ = c.g_object_bind_property(
-            @alignCast(@ptrCast(sites_toggle)),
+            @ptrCast(@alignCast(sites_toggle)),
             "active",
-            @alignCast(@ptrCast(site_layer.marker_layer)),
+            @ptrCast(@alignCast(site_layer.marker_layer)),
             "visible",
             c.G_BINDING_DEFAULT,
         );
@@ -244,26 +244,26 @@ pub const Application = struct {
 
         const simple_map = c.shumate_simple_map_new();
         c.shumate_simple_map_set_map_source(simple_map, source);
-        c.gtk_widget_set_halign(@alignCast(@ptrCast(simple_map)), c.GTK_ALIGN_FILL);
-        c.gtk_widget_set_valign(@alignCast(@ptrCast(simple_map)), c.GTK_ALIGN_FILL);
-        c.gtk_widget_set_hexpand(@alignCast(@ptrCast(simple_map)), 1);
-        c.gtk_widget_set_vexpand(@alignCast(@ptrCast(simple_map)), 1);
+        c.gtk_widget_set_halign(@ptrCast(@alignCast(simple_map)), c.GTK_ALIGN_FILL);
+        c.gtk_widget_set_valign(@ptrCast(@alignCast(simple_map)), c.GTK_ALIGN_FILL);
+        c.gtk_widget_set_hexpand(@ptrCast(@alignCast(simple_map)), 1);
+        c.gtk_widget_set_vexpand(@ptrCast(@alignCast(simple_map)), 1);
 
         return simple_map;
     }
 
     fn createRadarOptions(self: *Self) [*c]c.GtkWidget {
         const list_box = c.gtk_list_box_new();
-        c.gtk_list_box_set_selection_mode(@alignCast(@ptrCast(list_box)), c.GTK_SELECTION_NONE);
+        c.gtk_list_box_set_selection_mode(@ptrCast(@alignCast(list_box)), c.GTK_SELECTION_NONE);
 
         const tilt_box = c.gtk_box_new(c.GTK_ORIENTATION_HORIZONTAL, 20);
         const tilt_label = c.gtk_label_new("Tilt");
         self.tilt_selector = self.createTiltSelector();
-        c.gtk_box_append(@alignCast(@ptrCast(tilt_box)), @alignCast(@ptrCast(tilt_label)));
-        c.gtk_box_append(@alignCast(@ptrCast(tilt_box)), @alignCast(@ptrCast(self.tilt_selector)));
+        c.gtk_box_append(@ptrCast(@alignCast(tilt_box)), @ptrCast(@alignCast(tilt_label)));
+        c.gtk_box_append(@ptrCast(@alignCast(tilt_box)), @ptrCast(@alignCast(self.tilt_selector)));
 
-        c.gtk_list_box_append(@alignCast(@ptrCast(list_box)), @alignCast(@ptrCast(tilt_box)));
-        return @alignCast(@ptrCast(list_box));
+        c.gtk_list_box_append(@ptrCast(@alignCast(list_box)), @ptrCast(@alignCast(tilt_box)));
+        return @ptrCast(@alignCast(list_box));
     }
 
     fn createTiltSelector(self: *Self) *c.GtkSpinButton {
@@ -276,7 +276,7 @@ pub const Application = struct {
             null,
             c.G_CONNECT_SWAPPED,
         );
-        return @alignCast(@ptrCast(button));
+        return @ptrCast(@alignCast(button));
     }
 
     fn onSiteChanged(self: *Self, _: *c.GParamSpec, selector: *c.GtkDropDown) callconv(.C) void {
@@ -364,7 +364,7 @@ pub const Application = struct {
                 @ptrCast(product.getProductName().ptr),
             );
         }
-        c.gtk_drop_down_set_model(self.product_selector, @alignCast(@ptrCast(model)));
+        c.gtk_drop_down_set_model(self.product_selector, @ptrCast(@alignCast(model)));
     }
 };
 

@@ -18,7 +18,7 @@
 //! with reference counting capabilities. This is useful for passing pointers to Zig structs
 //! through GObject signal handlers, where reference counting is a must to ensure that objects
 //! are not freed prematurely.
-const c = @import("c.zig");
+const c = @import("c.zig").c;
 const std = @import("std");
 
 /// Provides a convenience method to create a `Boxed` subtype
@@ -121,7 +121,7 @@ pub fn Boxed(comptime T: type, comptime destructor: anytype) type {
         /// not be.
         pub fn ref(self: *Self) *Self {
             const ptr = c.g_boxed_copy(getType(), self);
-            return @alignCast(@ptrCast(ptr));
+            return @ptrCast(@alignCast(ptr));
         }
 
         /// Releases a reference to the contained value. Callers should use caution to

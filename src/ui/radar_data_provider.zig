@@ -16,7 +16,7 @@
 
 const std = @import("std");
 const lib = @import("../lib.zig");
-const c = lib.c;
+const c = lib.c.c;
 const gobject = @import("gobject.zig");
 const gio = @import("async.zig");
 const nexrad = @import("../nexrad.zig");
@@ -69,7 +69,12 @@ pub const RadarDataProvider = extern struct {
         DataUpdated = 0,
     };
 
-    pub usingnamespace gobject.RegisterType(Self, &c.g_object_get_type, "RadarDataProvider", &.{});
+    pub const Type = gobject.RegisterType(
+        Self,
+        &c.g_object_get_type,
+        "RadarDataProvider",
+        &.{},
+    );
 
     pub const Class = extern struct {
         parent: c.GObjectClass,
@@ -142,7 +147,7 @@ pub const RadarDataProvider = extern struct {
 
             signals[@intFromEnum(Signals.DataUpdated)] = c.g_signal_new(
                 "data-updated",
-                Self.getType(),
+                Self.Type.getId(),
                 c.G_SIGNAL_RUN_LAST | c.G_SIGNAL_DETAILED,
                 0,
                 null,
@@ -160,8 +165,8 @@ pub const RadarDataProvider = extern struct {
     };
 
     pub fn new(allocator: *std.mem.Allocator, cache_dir: *c.gchar) callconv(.C) *Self {
-        return @alignCast(@ptrCast(c.g_object_new(
-            Self.getType(),
+        return @ptrCast(@alignCast(c.g_object_new(
+            Self.Type.getId(),
             "allocator",
             allocator,
             "cache-root",
@@ -207,7 +212,7 @@ pub const RadarDataProvider = extern struct {
     pub fn setProperty(self: *Self, property_id: c.guint, value: *c.GValue, _: *c.GParamSpec) callconv(.C) void {
         switch (@as(Properties, @enumFromInt(property_id))) {
             .Allocator => {
-                self.allocator = @alignCast(@ptrCast(c.g_value_get_pointer(value)));
+                self.allocator = @ptrCast(@alignCast(c.g_value_get_pointer(value)));
             },
             .CacheRoot => {
                 self.cache_root = c.g_string_assign(self.cache_root, c.g_value_get_string(value));
@@ -349,7 +354,7 @@ pub const RadarDataProvider = extern struct {
         _ = data;
 
         var g_error: ?*c.GError = null;
-        const radar_data: ?*BoxedRadarData = @alignCast(@ptrCast(c.g_task_propagate_pointer(@ptrCast(result), &g_error)));
+        const radar_data: ?*BoxedRadarData = @ptrCast(@alignCast(c.g_task_propagate_pointer(@ptrCast(result), &g_error)));
         c.g_atomic_int_set(&self.check_in_progress, 0);
 
         defer if (radar_data) |rd| rd.unref();

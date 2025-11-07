@@ -45,7 +45,7 @@ const StatementType = enum {
     SolidColor4,
 };
 
-const TinyString = std.BoundedArray(u8, 16);
+const TinyString = std.ArrayList(u8);
 
 allocator: std.mem.Allocator,
 product: TinyString,

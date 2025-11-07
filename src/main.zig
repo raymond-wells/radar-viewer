@@ -20,9 +20,11 @@ const c = @import("lib.zig").c;
 const assets = @import("assets/bundled_assets.zig");
 
 pub fn main() !void {
-    const stderr = std.io.getStdErr();
-    const writer = stderr.writer();
-    try std.fmt.format(writer, assets.license, .{});
+    const stderr = std.fs.File.stderr();
+    var stderr_buf: [1024]u8 = undefined;
+    var writer = stderr.writer(&stderr_buf);
+    // try std.fmt.format(writer, assets.license, .{});
+    _ = try writer.interface.write(assets.license);
     defer stderr.close();
 
     const allocator = std.heap.c_allocator;

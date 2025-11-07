@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub const Manager = @import("color_tables/Manager.zig");
-pub usingnamespace @import("color_tables/definitions.zig");
+pub const definitions = @import("color_tables/definitions.zig");
 test {
     _ = @import("color_tables/Manager.zig");
 }

@@ -17,18 +17,18 @@
 //! A set of utilities for interoperability between GObject (GLib Object) and Zig. The utilities herein allow callers to
 //! register Zig structs as subclasses of GObject types.
 const std = @import("std");
-const c = @import("../lib.zig").c;
-const TypeGetter = *const fn () callconv(.C) c.GType;
+const c = @import("../lib.zig").c.c;
+const TypeGetter = *const fn () callconv(.c) c.GType;
 
 /// A workaround for Zig's lack of support regarding `null` in variadic functions.
 /// Pass this into `g_object_new` to mark the end of the property list.
 ///
-/// e.g. g_object_new(Self.getType(), "constructor-property", "value", gobject.end_of_args);
+/// e.g. g_object_new(Self.Type.getId(), "constructor-property", "value", gobject.end_of_args);
 pub const end_of_args = @as(c.gpointer, @ptrFromInt(0));
 
 /// Return a pointer to the `GObjectClass` corresponding to the provided instance.
 pub fn getGObjectClass(instance: anytype) *c.GObjectClass {
-    const type_instance: *c.GTypeInstance = @alignCast(@ptrCast(instance));
+    const type_instance: *c.GTypeInstance = @ptrCast(@alignCast(instance));
     return @ptrCast(type_instance.g_class);
 }
 
@@ -40,14 +40,14 @@ pub fn getGObjectClass(instance: anytype) *c.GObjectClass {
 /// respective superclasses.
 pub fn getParentClass(type_: c.GType) *c.GObjectClass {
     const object_class = c.g_type_class_peek_static(type_);
-    return @alignCast(@ptrCast(c.g_type_class_peek_parent(@ptrCast(object_class))));
+    return @ptrCast(@alignCast(c.g_type_class_peek_parent(@ptrCast(object_class))));
 }
 /// Return a pointer to the `*Interface` instance corresponding to the given interface
 /// implemented by the provided type, if any.
 pub fn getInterface(comptime I: type, interface_type_id: c.GType, instance: anytype) ?*I {
     return @as(
         ?*I,
-        @alignCast(@ptrCast(c.g_type_interface_peek(getGObjectClass(instance), interface_type_id))),
+        @ptrCast(@alignCast(c.g_type_interface_peek(getGObjectClass(instance), interface_type_id))),
     );
 }
 
@@ -105,7 +105,7 @@ pub fn RegisterType(
         const Self = @This();
         var g_type_id: ?c.GType = null;
 
-        pub fn getType() callconv(.C) c.GType {
+        pub fn getId() callconv(.c) c.GType {
             if (g_type_id) |type_id| {
                 return type_id;
             } else {
@@ -132,7 +132,7 @@ pub fn RegisterType(
             return type_id;
         }
 
-        fn disposeWrapper(self: *T) callconv(.C) void {
+        fn disposeWrapper(self: *T) callconv(.c) void {
             if (@hasDecl(T, "dispose")) {
                 self.dispose();
             }
@@ -141,7 +141,7 @@ pub fn RegisterType(
             parent_class.dispose.?(@ptrCast(self));
         }
 
-        fn finalizeWrapper(self: *T) callconv(.C) void {
+        fn finalizeWrapper(self: *T) callconv(.c) void {
             if (@hasDecl(T, "finalize")) {
                 self.finalize();
             }
@@ -149,7 +149,7 @@ pub fn RegisterType(
             getParentClass(g_type_id.?).finalize.?(@ptrCast(self));
         }
 
-        fn initClass(class: *T.Class) callconv(.C) void {
+        fn initClass(class: *T.Class) callconv(.c) void {
             if (@intFromPtr(class) == 0x0) {
                 std.debug.print("Class pointer is null.\n", .{});
             }
@@ -190,8 +190,8 @@ test "Get Type Singleton" {
         pub fn setProperty(_: *c.GObject, _: c.guint, _: *c.GValue, _: *c.GParamSpec) void {}
     };
     const wrapper = RegisterType(CustomType, c.g_object_get_type, "TestType1", &.{});
-    const expected = wrapper.getType();
-    try std.testing.expectEqual(expected, wrapper.getType());
+    const expected = wrapper.getId();
+    try std.testing.expectEqual(expected, wrapper.getId());
 }
 
 test "Subclasses of Zig types." {
@@ -204,7 +204,7 @@ test "Subclasses of Zig types." {
             parent_class: c.GObjectClass,
         };
 
-        pub usingnamespace RegisterType(Self, &c.g_object_get_type, "Parent1", &.{});
+        pub const Type = RegisterType(Self, &c.g_object_get_type, "Parent1", &.{});
 
         pub fn finalize(_: *Self) void {}
         pub fn init(_: *Self) void {}
@@ -222,7 +222,7 @@ test "Subclasses of Zig types." {
             parent_class: Parent.Class,
         };
 
-        pub usingnamespace RegisterType(Self, &Parent.getType, "Child1", &.{});
+        pub const Type = RegisterType(Self, &Parent.Type.getId, "Child1", &.{});
 
         pub fn finalize(_: *Self) void {}
         pub fn init(_: *Self) void {}
@@ -231,14 +231,14 @@ test "Subclasses of Zig types." {
         pub fn setProperty(_: *c.GObject, _: c.guint, _: *c.GValue, _: *c.GParamSpec) void {}
     };
 
-    try std.testing.expectEqual(Parent.getType(), c.g_type_parent(Child.getType()));
+    try std.testing.expectEqual(Parent.Type.getId(), c.g_type_parent(Child.Type.getId()));
 
     const instance: *Child = @ptrCast(c.g_object_new(
-        Child.getType(),
+        Child.Type.getId(),
         @ptrFromInt(0),
     ));
 
-    try std.testing.expectEqual(c.G_OBJECT_TYPE(instance), Child.getType());
+    try std.testing.expectEqual(c.G_OBJECT_TYPE(instance), Child.Type.getId());
 
     c.g_object_unref(instance);
 }
@@ -260,7 +260,7 @@ test "Initialization and Freeing" {
         pub fn setProperty(_: *c.GObject, _: c.guint, _: *c.GValue, _: *c.GParamSpec) void {}
     };
     const wrapper = RegisterType(CustomType, c.g_object_get_type, "TestType2", &.{});
-    const instance = c.g_object_new(wrapper.getType(), null);
+    const instance = c.g_object_new(wrapper.getId(), null);
     c.g_object_unref(instance);
 }
 
@@ -274,7 +274,7 @@ test "Implementing Interfaces" {
             parent_class: c.GObjectClass,
         };
 
-        pub usingnamespace RegisterType(
+        pub const Type = RegisterType(
             Self,
             &c.g_object_get_type,
             "TestInterfaces",
@@ -314,7 +314,7 @@ test "Implementing Interfaces" {
         pub fn setProperty(_: *c.GObject, _: c.guint, _: *c.GValue, _: *c.GParamSpec) void {}
     };
 
-    const instance: *CustomType = @alignCast(@ptrCast(c.g_object_new(CustomType.getType(), null)));
+    const instance: *CustomType = @ptrCast(@alignCast(c.g_object_new(CustomType.Type.getId(), null)));
     const maybe_iface = getInterface(c.GListModelInterface, c.g_list_model_get_type(), instance);
     try std.testing.expect(maybe_iface != null);
 

@@ -1,4 +1,5 @@
 const std = @import("std");
+const Translator = @import("translate_c").Translator;
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
@@ -31,19 +32,27 @@ pub fn build(b: *std.Build) void {
         "src/assets/resources.gresource",
     );
 
+    const app_module = b.addModule(
+        "root",
+        .{
+            .root_source_file = .{ .cwd_relative = "src/main.zig" },
+            .target = target,
+            .optimize = optimize,
+        },
+    );
+
     const exe = b.addExecutable(.{
         .name = "radar-viewer",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
-        .root_source_file = .{ .cwd_relative = "src/main.zig" },
-        .target = target,
-        .optimize = optimize,
+        .root_module = app_module,
     });
     exe.step.dependOn(&copy_resource.step);
     exe.linkSystemLibrary("gtk4");
     exe.linkSystemLibrary("shumate-1.0");
     exe.linkSystemLibrary("bzip2");
     exe.linkSystemLibrary("libsoup-3.0");
+
     exe.linkLibC();
 
     // This declares intent for the executable to be installed into the
@@ -77,9 +86,7 @@ pub fn build(b: *std.Build) void {
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
     const unit_tests = b.addTest(.{
-        .root_source_file = .{ .cwd_relative = "src/main.zig" },
-        .target = target,
-        .optimize = optimize,
+        .root_module = app_module,
     });
 
     unit_tests.linkSystemLibrary("gtk4");

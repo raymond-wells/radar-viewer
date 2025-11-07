@@ -28,7 +28,7 @@ const defs = @import("definitions.zig");
 const gio = @import("../async.zig");
 const lib = @import("../../lib.zig");
 const assets = @import("../../assets/bundled_assets.zig");
-const c = lib.c;
+const c = lib.c.c;
 
 const Entry = @import("Entry.zig");
 
@@ -49,7 +49,7 @@ allocator: std.mem.Allocator,
 entry_list: std.ArrayListUnmanaged(*lib.AutoBoxed(Entry)),
 product_association: [defs.number_of_products]?usize = .{null} ** defs.number_of_products,
 
-pub usingnamespace gobject.RegisterType(
+pub const Type = gobject.RegisterType(
     Self,
     &c.g_object_get_type,
     "RadarViewerColorTableManager",
@@ -63,7 +63,7 @@ pub const Class = struct {
 /// Instantiates a new instance as a `GObject`. Caller is responsible for
 /// freeing data via `g_object_unref`.
 pub fn new(allocator: std.mem.Allocator) *Self {
-    const self: *Self = @alignCast(@ptrCast(c.g_object_new(Self.getType(), null)));
+    const self: *Self = @ptrCast(@alignCast(c.g_object_new(Self.Type.getId(), null)));
     self.allocator = allocator;
     return self;
 }
@@ -112,7 +112,7 @@ fn importColorTableFinished(
     data: c.gpointer,
 ) void {
     var g_error: ?*c.GError = null;
-    const maybe_entry: ?*lib.AutoBoxed(Entry) = @alignCast(@ptrCast(c.g_task_propagate_pointer(
+    const maybe_entry: ?*lib.AutoBoxed(Entry) = @ptrCast(@alignCast(c.g_task_propagate_pointer(
         @ptrCast(result),
         @ptrCast(&g_error),
     )));
@@ -221,7 +221,7 @@ pub fn getEntryForProduct(self: Self, product: defs.ProductAssociation) ?*lib.Au
 
 test "Type Intiailization" {
     try std.testing.expectEqualStrings(
-        std.mem.sliceTo(c.g_type_name(Self.getType()), 0),
+        std.mem.sliceTo(c.g_type_name(Self.Type.getId()), 0),
         "RadarViewerColorTableManager",
     );
 }

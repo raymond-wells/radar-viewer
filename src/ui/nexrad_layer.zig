@@ -16,7 +16,7 @@
 
 const std = @import("std");
 const lib = @import("../lib.zig");
-const c = lib.c;
+const c = lib.c.c;
 const gobject = @import("gobject.zig");
 const gio = @import("async.zig");
 const nexrad = @import("../nexrad.zig");
@@ -49,7 +49,12 @@ pub const NexradLayer = struct {
     const BoxedRadarData = lib.AutoBoxed(nexrad.NexradLevel3);
     const Self = @This();
 
-    pub usingnamespace gobject.RegisterType(Self, &c.shumate_layer_get_type, "NexradLayer", &.{});
+    pub const Type = gobject.RegisterType(
+        Self,
+        &c.shumate_layer_get_type,
+        "NexradLayer",
+        &.{},
+    );
 
     pub const Class = extern struct {
         parent: c.ShumateLayerClass,
@@ -62,8 +67,8 @@ pub const NexradLayer = struct {
     };
 
     pub fn new(viewport: ?*c.ShumateViewport, allocator: std.mem.Allocator, provider: *RadarDataProvider, manager: *color_tables.Manager) *Self {
-        const self: *Self = @alignCast(@ptrCast(c.g_object_new(
-            Self.getType(),
+        const self: *Self = @ptrCast(@alignCast(c.g_object_new(
+            Self.Type.getId(),
             "viewport",
             viewport,
             gobject.end_of_args,
@@ -200,7 +205,7 @@ pub const NexradLayer = struct {
         self.radar_longitude = radar_data.radar_longitude;
         self.radial_length_meters = switch (radar_data.product_code) {
             94 => 230000.0,
-            99, 59, 161, 163 => 150012.1,
+            99, 59, 159, 161, 163 => 150012.1,
             180, 182 => 44448.02,
             135 => 172236.1,
             else => 0.0,
@@ -220,7 +225,7 @@ pub const NexradLayer = struct {
         // Since we created a reference to the radar data at the task call site,
         // we'll need to release the reference corresponding reference here in order to ensure
         // that it get cleaned up properly.
-        const boxed: *BoxedRadarData = @alignCast(@ptrCast(c.g_task_get_task_data(@ptrCast(result))));
+        const boxed: *BoxedRadarData = @ptrCast(@alignCast(c.g_task_get_task_data(@ptrCast(result))));
         boxed.unref();
 
         var g_error: ?*c.GError = null;

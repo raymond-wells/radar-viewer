@@ -15,7 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 pub const c = @import("lib/c.zig");
-pub usingnamespace @import("lib/Boxed.zig");
+
+const box = @import("lib/Boxed.zig");
+pub const Boxed = box.Boxed;
+pub const AutoBoxed = box.AutoBoxed;
 
 test {
     _ = @import("lib/Boxed.zig");

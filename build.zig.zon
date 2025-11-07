@@ -1,0 +1,12 @@
+.{
+    .name = .radar_viewer,
+    .version = "0.15.2",
+    .dependencies = .{
+        .translate_c = .{
+            .url = "git+https://github.com/ziglang/translate-c#d698816184885c9cf7eaa04e8d27cf3855f368d3",
+            .hash = "translate_c-0.0.0-Q_BUWlqMBgC96AnDdjyMJp6VxKT1jIcXPQCtFLYwkjBQ",
+        },
+    },
+    .paths = .{""},
+    .fingerprint = 0x389ca3547034e9e6,
+}
