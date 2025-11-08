@@ -17,7 +17,7 @@
 //! A collection of utilities for dealing with GIO Async constructs in a zig-friendly way.
 
 const std = @import("std");
-const c = @import("../lib.zig").c;
+const c = @import("../lib.zig").c.c;
 
 ///
 /// Wraps a Zig function, which may return errors, in a Gio.Task object with proper error handling.
@@ -62,11 +62,11 @@ pub fn asyncTaskWrapper(comptime thread_func: anytype, comptime finish_callback:
             return task;
         }
 
-        fn threadFunc(task: *c.GTask, self: *anyopaque, data: *anyopaque, cancellable: *c.GCancellable) callconv(.C) void {
+        fn threadFunc(task: *c.GTask, self: *anyopaque, data: *anyopaque, cancellable: *c.GCancellable) callconv(.c) void {
             const return_value = thread_func(
                 task,
-                @alignCast(@ptrCast(self)),
-                @alignCast(@ptrCast(data)),
+                @ptrCast(@alignCast(self)),
+                @ptrCast(@alignCast(data)),
                 cancellable,
             ) catch |err| {
                 c.g_task_return_new_error(

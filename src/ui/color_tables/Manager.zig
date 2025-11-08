@@ -68,11 +68,11 @@ pub fn new(allocator: std.mem.Allocator) *Self {
     return self;
 }
 
-pub fn init(self: *Self) callconv(.C) void {
+pub fn init(self: *Self) callconv(.c) void {
     self.entry_list = .{};
 }
 
-pub fn finalize(self: *Self) callconv(.C) void {
+pub fn finalize(self: *Self) callconv(.c) void {
     for (self.entry_list.items) |entry| {
         entry.unref();
     }
@@ -179,7 +179,7 @@ fn importColorTableFromReader(self: *Self, reader: anytype) !*lib.AutoBoxed(Entr
     });
 
     entry.value.product = defs.ProductCodeToAssociation.get(
-        entry.value.table.product.constSlice(),
+        entry.value.table.productSlice(),
     ) orelse .BaseReflectivity;
 
     const range = defs.Ranges[@intFromEnum(entry.value.product)];

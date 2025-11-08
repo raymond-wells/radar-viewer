@@ -16,7 +16,7 @@
 
 const std = @import("std");
 const ui = @import("ui.zig");
-const c = @import("lib.zig").c;
+const c = @import("lib.zig").c.c;
 const assets = @import("assets/bundled_assets.zig");
 
 pub fn main() !void {

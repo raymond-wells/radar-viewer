@@ -59,7 +59,7 @@ pub const NexradLayer = struct {
     pub const Class = extern struct {
         parent: c.ShumateLayerClass,
 
-        pub fn initClass(self: *Class) callconv(.C) void {
+        pub fn initClass(self: *Class) callconv(.c) void {
             const widget_class: *c.GtkWidgetClass = @ptrCast(self);
 
             widget_class.snapshot = @ptrCast(&onSnapshot);
@@ -97,13 +97,13 @@ pub const NexradLayer = struct {
         return self;
     }
 
-    pub fn init(self: *Self) callconv(.C) void {
+    pub fn init(self: *Self) callconv(.c) void {
         self.internal_surface_size = 20480;
         self.should_draw = false;
         self.initSurface();
     }
 
-    pub fn finalize(self: *Self) callconv(.C) void {
+    pub fn finalize(self: *Self) callconv(.c) void {
         c.cairo_surface_destroy(self.radar_surface);
     }
 
@@ -115,14 +115,14 @@ pub const NexradLayer = struct {
     ///
     /// When the user zooms or pans the viewport, the application will need to redraw the layer.
     ///
-    fn onViewportChanged(self: *Self, _: *c.GParamSpec, _: *c.ShumateViewport) callconv(.C) void {
+    fn onViewportChanged(self: *Self, _: *c.GParamSpec, _: *c.ShumateViewport) callconv(.c) void {
         c.gtk_widget_queue_draw(@ptrCast(self));
     }
 
     ///
     /// Renders the internal radar texture to the widget at the correct location.
     ///
-    fn onSnapshot(self: *Self, snapshot: *c.GtkSnapshot) callconv(.C) void {
+    fn onSnapshot(self: *Self, snapshot: *c.GtkSnapshot) callconv(.c) void {
         if (!self.should_draw) {
             return;
         }
@@ -198,7 +198,7 @@ pub const NexradLayer = struct {
     }
 
     /// Triggers a re-draw of the backing radar image texture upon new data received from the provider.
-    fn onRadarDataUpdated(self: *Self, data_ptr: *BoxedRadarData, _: c.gpointer, _: c.gpointer) callconv(.C) void {
+    fn onRadarDataUpdated(self: *Self, data_ptr: *BoxedRadarData, _: c.gpointer, _: c.gpointer) callconv(.c) void {
         const radar_data = &data_ptr.value;
         self.should_draw = false;
         self.radar_latitude = radar_data.radar_latitude;
@@ -221,7 +221,7 @@ pub const NexradLayer = struct {
         try self.redrawRadarTexture(&radar_data.value);
     }
 
-    fn radarTextureUpdateFinished(self: *Self, result: *c.GAsyncResult, _: *anyopaque) callconv(.C) void {
+    fn radarTextureUpdateFinished(self: *Self, result: *c.GAsyncResult, _: *anyopaque) callconv(.c) void {
         // Since we created a reference to the radar data at the task call site,
         // we'll need to release the reference corresponding reference here in order to ensure
         // that it get cleaned up properly.
@@ -255,7 +255,7 @@ pub const NexradLayer = struct {
         const context = c.cairo_create(self.radar_surface) orelse return error.@"Failed to create cairo context.";
         defer c.cairo_destroy(context);
 
-        const product: color_tables.ProductAssociation = switch (radar_data.product_code) {
+        const product: color_tables.definitions.ProductAssociation = switch (radar_data.product_code) {
             94, 180 => .BaseReflectivity,
             99, 182 => .BaseVelocity,
             161 => .CorrelationCoefficient,

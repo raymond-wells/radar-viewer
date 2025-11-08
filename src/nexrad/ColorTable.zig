@@ -45,11 +45,9 @@ const StatementType = enum {
     SolidColor4,
 };
 
-const TinyString = std.ArrayList(u8);
-
 allocator: std.mem.Allocator,
-product: TinyString,
-units: TinyString,
+product: [16]u8,
+units: [16]u8,
 scale: f32 = undefined,
 offset: f32 = undefined,
 step: f32 = undefined,
@@ -66,15 +64,15 @@ unit_conversion_factor: f32 = 1.0,
 pub fn parseColorTable(allocator: std.mem.Allocator, reader: anytype) !Self {
     var self: Self = .{
         .allocator = allocator,
-        .product = try TinyString.init(0),
-        .units = try TinyString.init(0),
+        .product = .{0} ** 16,
+        .units = .{0} ** 16,
         .scale = 0.0,
         .offset = 0.0,
         .range_folded = null,
         .color_steps = &.{},
     };
 
-    var color_steps = std.ArrayList(Step).init(allocator);
+    var color_steps = std.array_list.Managed(Step).init(allocator);
     defer color_steps.deinit();
 
     var line_buf: [1024]u8 = undefined;
@@ -96,8 +94,8 @@ pub fn parseColorTable(allocator: std.mem.Allocator, reader: anytype) !Self {
         }
 
         switch (statement_type.?) {
-            .Product => self.product = try TinyString.fromSlice(statement[0..@min(15, statement.len)]),
-            .Units => self.units = try TinyString.fromSlice(statement[0..@min(15, statement.len)]),
+            .Product => std.mem.copyForwards(u8, &self.product, statement[0..@min(15, statement.len)]),
+            .Units => std.mem.copyForwards(u8, &self.units, statement[0..@min(15, statement.len)]),
             .Scale => self.scale = try std.fmt.parseFloat(@TypeOf(self.scale), statement),
             .Offset => self.offset = try std.fmt.parseFloat(@TypeOf(self.offset), statement),
             .Step => self.step = try std.fmt.parseFloat(@TypeOf(self.step), statement),
@@ -113,7 +111,7 @@ pub fn parseColorTable(allocator: std.mem.Allocator, reader: anytype) !Self {
     // See if we can better handle special cases like this.
     // If we have a base velocity product, the units are expressed in
     // Knots in the color table, but m/s from the radar.
-    if (std.mem.eql(u8, self.product.slice(), "BV") and std.mem.eql(u8, self.units.slice(), "KT")) {
+    if (std.mem.eql(u8, self.productSlice(), "BV") and std.mem.eql(u8, self.unitsSlice(), "KT")) {
         self.unit_conversion_factor = 0.5144447;
     }
 
@@ -261,6 +259,14 @@ pub fn getInterpolatedColor(self: Self, comptime T: type, radar_level: f32) @Vec
     return (start_color * @as(@Vector(4, T), @splat(sfac)) + end_color * @as(@Vector(4, T), @splat(fac)));
 }
 
+pub inline fn productSlice(self: Self) []const u8 {
+    return std.mem.sliceTo(&self.product, 0);
+}
+
+pub inline fn unitsSlice(self: Self) []const u8 {
+    return std.mem.sliceTo(&self.units, 0);
+}
+
 /// Parses (Solid)Color(4) steps into a new `Step` instance given a raw `statement`.
 inline fn parseAnyColorStep(statement: []const u8, parseColor: anytype) !Step {
     var return_value = Step{
@@ -327,8 +333,8 @@ test "Parse Color Table: No steps" {
     const parsed_table = try parseColorTable(std.testing.allocator, fbs.reader());
     defer parsed_table.deinit();
 
-    try std.testing.expectEqualStrings("BR", parsed_table.product.constSlice());
-    try std.testing.expectEqualStrings("dbZ", parsed_table.units.constSlice());
+    try std.testing.expectEqualStrings("BR", parsed_table.productSlice());
+    try std.testing.expectEqualStrings("dbZ", parsed_table.unitsSlice());
 }
 
 test "Parse Color Table: Color Steps" {
@@ -345,8 +351,8 @@ test "Parse Color Table: Color Steps" {
     const parsed_table = try parseColorTable(std.testing.allocator, fbs.reader());
     defer parsed_table.deinit();
 
-    try std.testing.expectEqualStrings("BR", parsed_table.product.constSlice());
-    try std.testing.expectEqualStrings("dbZ", parsed_table.units.constSlice());
+    try std.testing.expectEqualStrings("BR", std.mem.sliceTo(&parsed_table.product, 0));
+    try std.testing.expectEqualStrings("dbZ", std.mem.sliceTo(&parsed_table.units, 0));
     try std.testing.expectEqual(2, parsed_table.color_steps.len);
 
     try std.testing.expectEqual(10.0, parsed_table.color_steps[0].value);

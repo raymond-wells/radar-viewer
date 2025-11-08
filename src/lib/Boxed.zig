@@ -134,12 +134,12 @@ pub fn Boxed(comptime T: type, comptime destructor: anytype) type {
             c.g_boxed_free(getType(), self);
         }
 
-        fn copyFunc(self: *Self) callconv(.C) *Self {
+        fn copyFunc(self: *Self) callconv(.c) *Self {
             c.g_ref_count_inc(&self.ref_count);
             return self;
         }
 
-        fn freeFunc(self: *Self) callconv(.C) void {
+        fn freeFunc(self: *Self) callconv(.c) void {
             if (c.g_ref_count_dec(&self.ref_count) == 1) {
                 switch (@typeInfo(@TypeOf(destructor))) {
                     .@"fn" => |t| switch (@typeInfo(t.params[0].type.?)) {

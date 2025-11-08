@@ -16,7 +16,7 @@
 
 //! Provides a generic Reader implementation for handling BZIP2 compression in streams.
 const std = @import("std");
-const c = @import("../lib.zig").c;
+const c = @import("../lib.zig").c.c;
 
 const default_buffer_size = 256 * 1024;
 

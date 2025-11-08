@@ -279,7 +279,7 @@ pub const Application = struct {
         return @ptrCast(@alignCast(button));
     }
 
-    fn onSiteChanged(self: *Self, _: *c.GParamSpec, selector: *c.GtkDropDown) callconv(.C) void {
+    fn onSiteChanged(self: *Self, _: *c.GParamSpec, selector: *c.GtkDropDown) callconv(.c) void {
         const site_object = c.gtk_drop_down_get_selected_item(selector);
         const site = c.gtk_string_object_get_string(@ptrCast(site_object));
 
@@ -293,7 +293,7 @@ pub const Application = struct {
         _ = self.provider.checkForRadarUpdates();
     }
 
-    fn onProductChanged(self: *Self, _: *c.GParamSpec, selector: *c.GtkDropDown) callconv(.C) void {
+    fn onProductChanged(self: *Self, _: *c.GParamSpec, selector: *c.GtkDropDown) callconv(.c) void {
         const product_idx: usize = @intCast(c.gtk_drop_down_get_selected(selector));
         if (product_idx == c.GTK_INVALID_LIST_POSITION) {
             return;
@@ -308,7 +308,7 @@ pub const Application = struct {
         self.onTiltChanged(self.tilt_selector);
     }
 
-    fn onTiltChanged(self: *Self, tilt: *c.GtkSpinButton) callconv(.C) void {
+    fn onTiltChanged(self: *Self, tilt: *c.GtkSpinButton) callconv(.c) void {
         const tilt_value = @as(u8, @intFromFloat(c.gtk_spin_button_get_value(tilt)));
         const product_index: usize = @intCast(c.gtk_drop_down_get_selected(self.product_selector));
         const tilt_index = self.product_table[product_index].tilt_digit_index;
@@ -320,7 +320,7 @@ pub const Application = struct {
         _ = self.provider.checkForRadarUpdates();
     }
 
-    fn onWindowShown(self: *Self, _: c.gpointer) callconv(.C) void {
+    fn onWindowShown(self: *Self, _: c.gpointer) callconv(.c) void {
         _ = self.provider.checkForRadarUpdates();
         self.provider.reScheduleUpdateChecks();
     }

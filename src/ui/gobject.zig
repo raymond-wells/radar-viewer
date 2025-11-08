@@ -253,7 +253,7 @@ test "Initialization and Freeing" {
             parent_class: c.GObjectClass,
         };
 
-        pub fn finalize(_: *Self) callconv(.C) void {}
+        pub fn finalize(_: *Self) callconv(.c) void {}
         pub fn init(_: *Self) void {}
 
         pub fn getProperty(_: *c.GObject, _: c.guint, _: *c.GValue, _: *c.GParamSpec) void {}
